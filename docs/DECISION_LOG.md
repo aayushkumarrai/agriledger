@@ -70,3 +70,20 @@ See spec §6 (full table with request/response shapes).
 - Contracts in spec §6 and §7 are PROPOSED defaults for the team to review.
 - Whether pool commodity / variety / Range may change after creation (proposal: no).
 - How a queue timeout is reported (proposal: BUSY, HTTP 503).
+
+## L. Answers to the Stage 0 report (19 Nov 2026) [FINAL unless marked]
+1. Unprotected demo mode is NOT a flag on the E2 sale function. It lives only in the concurrency test harness, on its own scratch table in a separate schema (plain counter, no CHECKs, no locks, read-then-write), and is never compiled into the server. CLAUDE.md rule 3 reworded.
+2. Percent display: one decimal, trailing zero trimmed, half-up. Master §6.1 superseded.
+3. Reports use the five-line format from CLAUDE.md.
+4. `display_unit` stored as 'quintal'; kg/quintal toggle per browser (localStorage).
+5. Price input: whole rupees per quintal only; decimals rejected with a plain message.
+6. Out of stock: no auto-close. Open pool with stock 0 = grey "Out of stock" tag, visible to buyers (greyed) for 24 h; a deposit makes it sellable again. Only the Manager closes (STATUS_CHANGED); a closed pool refuses deposits and sales; reopening needs a photo. Pools list wireframe tag "Closed · out of stock" becomes "Out of stock" (open, stock 0) and "Closed" (closed).
+7. Price and status changes appear in the Manager's stock ledger feed as different rows, read from `pool_change`; they are not ledger rows.
+8. Hash input for PRICE_CHANGED / STATUS_CHANGED: the `pool_change` fields in a fixed order; timestamps are UTC ISO-8601 with microseconds read back from the database after insert. **PROPOSED**, for Ayush (E1) and Shubhang (E2) to review. Written up in spec §5.3.
+9. "I tested this lot" checkbox: UI-only required confirmation, no schema change.
+10. Create pool: draft saved on the first photo or on "Save as draft", then photos upload to it.
+11. Quantity precision: 3 decimals in kg, 5 in quintal; more is rejected with a plain message.
+12. Test scripts take PGHOST, PGPORT, PGUSER, PGDATABASE from the environment; the app role gets a LOGIN user whose dev password is in a git-ignored `.env`. `db/schema.sql` is not edited.
+13. Manager-placed sales go through E3 like buyer sales.
+14. README and credits use the Master Document's spellings of names.
+15. Crow pinned with CMake FetchContent; `libasio-dev` preferred (apt). Playwright is installed at Stage 6.

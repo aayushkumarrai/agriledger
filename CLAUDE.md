@@ -6,11 +6,16 @@ Read `docs/IMPLEMENTATION_SPEC.md` first. It wins over the Master Document where
 ## Never break these
 1. **Integers only.** Quantity in grams, money in paise, price in paise per kg. No `float`/`double` in C++; no floating point for money or quantity in JavaScript either (parse text to integers, format with integers or `BigInt`).
 2. **Ledgers and audit tables are append-only.** Never write UPDATE, DELETE or TRUNCATE against them, never edit a past row; a correction is a new event. Do not weaken the triggers or the application role's grants.
-3. **Every sale is one transaction** that locks the pool row first (see spec §5.1), runs reconciliation INV-1…5 before commit, and rolls back fully on any failure. Never write a second code path that sells.
+3. **Every sale is one transaction** that locks the pool row first (see spec §5.1), runs reconciliation INV-1…5 before commit, and rolls back fully on any failure. There is exactly one production sale path (E4 → E3 → E2), and Manager-placed sales use it too. The "unprotected" mode for the concurrency demo exists only inside the test harness (`tests/` and the E3 harness), on its own scratch table in a separate schema; it is never part of the E2 sale function and never compiled into the server.
 4. **Never show codes or numbers about errors.** The server sends reason codes; the browser shows plain sentences from `web/i18n/en.json`. No literal UI strings in JS or HTML.
 5. **Check roles on the server for every request.** Hiding a button is not security. Buyers never receive farmer names, shares or payouts.
 6. **Do not invent features.** Out of scope: real payments, bidding or auctions, price feeds, mobile app, negotiated prices, SMS or email. Ask instead of guessing; mark anything you assume as PROPOSED in your report.
 7. Do not change `db/schema.sql` or the wireframe-defined screens without asking.
+
+## Decided rules (spec §4.5)
+- Pool status: no auto-close. An open pool with stock 0 shows a grey "Out of stock" tag; a deposit makes it sellable again; only the Manager closes or reopens a pool; a closed pool refuses deposits and sales.
+- Price is entered in whole rupees per quintal only. Quantity: at most 3 decimals in kg or 5 in quintal. Percentages: one decimal, trailing zero trimmed, half-up. `display_unit` is always `'quintal'`; the kg/quintal toggle lives in the browser.
+- Names in the README and credits use the spellings in the Master Document.
 
 ## Design rules (frontend)
 - Follow `docs/wireframes/*.png` and spec §8. Do not add elements, hues, gradients, shadows or emoji.

@@ -73,6 +73,8 @@ C++17, PostgreSQL 15+ (16 recommended), libpqxx, **Crow** (REST + WebSocket), nl
 
 Before Stage 0, check which of these are installed (`g++ --version`, `cmake --version`, `psql --version`, `docker --version`) and tell the user what is missing instead of silently changing the plan.
 
+**Pinned dependencies [FINAL]:** Crow is fetched with CMake `FetchContent` at a pinned release (the tag is recorded in `CMakeLists.txt`). Crow needs standalone Asio; the system package `libasio-dev` is preferred and CMake falls back to a pinned Asio release only if the package is missing. Playwright is installed at Stage 6, not before.
+
 ---
 
 ## 4. Data model
@@ -105,6 +107,21 @@ A pool cannot become `open` without ≥ 1 photo · `range_no` 1–3 · a sale ne
 
 `gross_paise = round_half_up(Q_g × price_paise_per_kg ÷ 1000)`, rounded once. Quantity and payouts are split among farmers by the **largest-remainder method** (ties → lowest `seller_id`), so they always add up exactly. The worked example in master §12 is the reference test: 600/800/600 kg pool, ₹25/kg, sale of 500 kg → 150/200/150 kg, ₹3,750 / ₹5,000 / ₹3,750, gross ₹12,500. The same numbers appear in the wireframes (pool P-12, paddy, Sona Masuri, Range 1).
 
+### 4.5 Decisions made after Stage 0 [FINAL, from the team's answers of 19 Nov 2026]
+
+- **Display unit.** `pool.display_unit` is stored as `'quintal'` for every pool. The kg / quintal toggle is per browser (`localStorage`), not stored on the pool or the user.
+- **Price input.** Whole rupees per quintal only (mandi and MSP prices are quoted that way); that number is stored unchanged as paise per kg. A decimal is rejected with a plain message.
+- **Quantity input.** Up to 3 decimals in kg, up to 5 decimals in quintal (both are exact grams). More decimals are rejected with a plain message.
+- **Percentages** (shares) are shown with one decimal, trailing zero trimmed ("30%", "36.8%"), rounded half-up, computed with integers. This supersedes master §6.1 ("24.32 %").
+- **Pool status** is `draft`, `open` or `closed`. **No auto-close.** An `open` pool with stock 0 shows a grey "Out of stock" tag; buyers still see it, greyed, for 24 hours after the sale that emptied it, and a deposit makes it sellable again. Only the Manager closes a pool (`STATUS_CHANGED`). A `closed` pool refuses deposits and sales; the Manager may reopen it (needs a photo, enforced by the database). The Pools list tag "Closed · out of stock" in the wireframe becomes **"Out of stock"** for an open pool with stock 0, and **"Closed"** for a closed pool.
+- **Manager's stock ledger feed** also shows price and status changes, read from `pool_change`, as clearly different rows ("Price changed ₹2,500 to ₹2,400"). They are not ledger rows.
+- **Deposit form.** The checkbox "I tested this lot and it meets the Range limits" is a required, UI-only confirmation. Nothing is stored; no schema change.
+- **Create pool.** The draft is saved on the first photo or on "Save as draft"; photos are uploaded to that draft.
+- **Manager-placed sales** go through E3 exactly like buyer sales. There is one production sale path.
+- **Unprotected demo mode** (O6 comparison) lives only in the concurrency test harness (`tests/` and the E3 harness): its own scratch table in a separate schema, a plain stock counter, no CHECK constraints, no locks, read-then-write. It is never part of the E2 sale function and never compiled into the server.
+- **Test scripts** read `PGHOST`, `PGPORT`, `PGUSER`, `PGDATABASE` (and `PGPASSWORD`) from the environment. The application connects as a LOGIN user that is a member of `agriledger_app`; its dev password lives in a git-ignored `.env`. `db/schema.sql` is not edited.
+- **Names** in the README and credits use the spellings in the Master Document.
+
 ---
 
 ## 5. Engines and interfaces
@@ -131,13 +148,29 @@ Each is one transaction that locks the pool row, writes its event, ledger rows (
 | Operation | Event | Notes |
 |---|---|---|
 | create pool | `POOL_CREATED` | status `draft`, stock 0 |
-| record contribution | `CONTRIBUTION` | farmer, quantity > 0; allowed while `draft` or `open` |
+| record contribution | `CONTRIBUTION` | farmer, quantity > 0; allowed while `draft` or `open`; refused with `POOL_NOT_OPEN` when `closed` |
 | add photo | none (row in `pool_photo`) | uploader, path, SHA-256 |
 | change price | `PRICE_CHANGED` | writes `pool_change` (field `PRICE`, old/new as paise-per-kg text); affects future sales only |
-| change status | `STATUS_CHANGED` | writes `pool_change` (field `STATUS`); opening needs ≥ 1 photo |
+| change status | `STATUS_CHANGED` | writes `pool_change` (field `STATUS`); opening or reopening needs ≥ 1 photo; only the Manager closes a pool (no auto-close, §4.5) |
 | create user | none | Manager only; sets `must_change_password = true` |
 
 [OPEN] whether `commodity`, `variety` and `range_no` may change after creation. Default: **no** (not exposed in the API).
+
+### 5.3 Audit entry hashing [PROPOSED: for Ayush (E1) and Shubhang (E2) to review]
+
+`entry_hash = lowercase hex SHA-256 of the UTF-8 text:`
+`pool_id | sequence_no | event_id | event_type | created_at_utc | canonical_rows | previous_hash`
+(joined with `|`; integers in plain decimal; the first entry of a pool uses `previous_hash` = 64 zeros).
+
+- `created_at_utc` is **`event.created_at` read back from the database after the event row is inserted**, formatted as UTC ISO-8601 with exactly 6 fractional digits, for example `2026-11-17T11:12:00.000000Z`.
+- `canonical_rows` is the concatenation of these segments, in this order, each row ending in `;`. Database-generated ids (`inv_id`, `own_id`, `fin_id`) are not hashed.
+  1. inventory rows in insertion order: `I,<movement_type>,<delta_g>,<resulting_stock_g>;`
+  2. ownership rows sorted by `seller_id`: `O,<seller_id>,<delta_g>,<resulting_balance_g>;`
+  3. financial rows, `SALE_GROSS` first, then payouts sorted by `seller_id`: `F,<entry_type>,<seller_id or ->,<amount_paise>;`
+  4. the `pool_change` row, if the event has one (`PRICE_CHANGED`, `STATUS_CHANGED`): `C,<field>,<old_value>,<new_value>,<changed_by>;`
+- A text value containing `,` `;` or `|` is refused by E1 (none occurs in the current data).
+- **Verification** (E1 walks the chain; E2 supplies the rows read from the database, rebuilt with the same E1 serialiser): per entry, in this order: `GAP` (sequence is not 1, 2, 3 …), `LINK_BROKEN` (`previous_hash` is not the previous entry's hash, or not 64 zeros for entry 1), `HASH_MISMATCH` (recomputed hash differs). E2 then adds `INVARIANT` when INV-1…5 fail. The first broken entry is reported.
+
 
 ---
 
@@ -154,7 +187,7 @@ All bodies are JSON (photo upload is `multipart/form-data`). Quantities in grams
 | `POST /users` · `GET /users` | Manager | Create farmer/buyer account with a temporary password; list accounts |
 | `GET /reference/commodities` | all | Commodities with their Range limits (`commodity_parameter`) |
 | `GET /reference/prices` | all | Latest MSP and mandi modal price per commodity (paise per quintal, label, date) |
-| `GET /pools` | all | List. Buyers see `open` pools, plus pools that sold out in the last 24 h (greyed). Never `draft`. |
+| `GET /pools` | all | List. Buyers see `open` pools with stock > 0, plus `open` pools whose stock reached 0 in the last 24 h (greyed, "Out of stock"). Never `draft` or `closed`. The Manager's list also carries the farmer count and the records-check status. |
 | `GET /pools/{id}` | all | Detail (see 6.2) |
 | `POST /pools` | Manager | Create pool (draft) |
 | `PATCH /pools/{id}` | Manager | `{price_paise_per_kg}` and/or `{status}` |
@@ -230,6 +263,8 @@ E2 issues `NOTIFY ledger_events, '<event_id>:<pool_id>'` inside the transaction 
 { "type": "my_purchase",     "pool_id": 12, "sale": { …receipt… } }                                       // to the buyer who bought only
 ```
 
+Price and status changes (from `pool_change`) reach the Manager as `ledger_rows` for `inventory` with rows marked `"kind":"change"`; the screen shows them as clearly different rows. They are not ledger rows.
+
 Buyers receive only stock, price, status and their own purchases. On disconnect the page shows a small "reconnecting" note, reconnects with back-off, **re-fetches current state, then resumes**. A rolled-back sale never notifies.
 
 ---
@@ -274,10 +309,10 @@ Contrast checked (WCAG ratios): ink on paper 13.2, muted on paper 5.5, leaf on p
 | Screen | Top to bottom |
 |---|---|
 | **Login** | name · username · password · one button · one generic error line. First login: "Set a new password" (new + repeat). |
-| **Manager: Pools** | table: pool, commodity · variety · Range, price, stock, status tag, records-check badge; **Create pool** button |
+| **Manager: Pools** | table: pool, commodity · variety · Range, price, stock, status tag (Open, Draft · needs a photo, Out of stock for an open pool with stock 0, Closed), records-check badge; **Create pool** button |
 | **Manager: Pool detail** | title and status → live stock and price (with MSP and mandi reference lines, **Change price**) → **Records check** with **Verify integrity** → photos (**Add photo**) → farmers and shares → inventory, ownership, financial ledgers (live) |
-| **Manager: Create pool** | commodity, variety, Range → price, minimum order, packaging, storage location → Range limits panel (read-only, from reference data, note "must be checked against the current official document") → 1–3 photo slots → **Open for sale** (disabled until a photo exists); **Save as draft** |
-| **Manager: Deposit / Sale / Accounts** | record a deposit (pool, farmer, quantity); place a sale for a buyer (same confirmation as buyers); create account (name, username, role, temporary password) + account list |
+| **Manager: Create pool** | commodity, variety, Range → price, minimum order, packaging, storage location → Range limits panel (read-only, from reference data, note "must be checked against the current official document") → 1–3 photo slots → **Open for sale** (disabled until a photo exists); **Save as draft**. The draft is saved on the first photo or on Save as draft; photos upload to that draft |
+| **Manager: Deposit / Sale / Accounts** | record a deposit (pool, farmer, quantity, and a required UI-only checkbox "I tested this lot…" that is not stored); place a sale for a buyer (same confirmation as buyers); create account (name, username, role, temporary password) + account list |
 | **Manager: Farmer statement** | farmer and pool picker → summary tiles → statement table |
 | **Farmer: My pools** | cards: pool, share, grain left, paid to me, latest activity → **View my statement** |
 | **Farmer: Statement** | summary tiles (deposited, sold, paid, left) → table of deposits and sales |
@@ -311,7 +346,7 @@ Contrast checked (WCAG ratios): ink on paper 13.2, muted on paper 5.5, leaf on p
 | Database | `db/tests/worked_example.sql` (INV-1…5 all OK) and `db/tests/negative.sh` (34 checks, all PASS). Keep green; add a check for every new rule. | E2 |
 | Unit (GoogleTest) | allocation incl. master §12 rounding example; hash and chain; queue ordering; unit/money parsing and formatting | E1, E3, E4 |
 | Integration | role matrix over every endpoint (T-FR-08); sale reasons from §6.3; duplicate `request_id`; price-changed race; failure injection per step (T-FR-09) | E4 |
-| Concurrency | master §11 scenarios; 50 concurrent buyers × 20 runs: zero oversold, accepted + rejected = total; **unprotected vs DB-isolated demo mode** (O6) | E3 |
+| Concurrency | master §11 scenarios; 50 concurrent buyers × 20 runs: zero oversold, accepted + rejected = total; **unprotected vs DB-isolated demo mode** (O6); the unprotected mode exists only in the test harness (own scratch table in a separate schema, plain counter, no CHECKs, no locks, read-then-write) and is never compiled into the server | E3 |
 | Tamper | edit a row as superuser, run integrity check, it names the exact entry (T-NFR-03) | E1, E2 |
 | Browser | Playwright against running server: each screen vs its wireframe at 1200 px and 390 px; buy flow; double-tap; live update in two windows | E4 |
 | Static | grep for `float`/`double` in `engines/`; grep for literal UI strings in `web/` | all |
@@ -326,12 +361,15 @@ Contrast checked (WCAG ratios): ink on paper 13.2, muted on paper 5.5, leaf on p
 4. New API endpoints (§6.1) and the sale contract (§6.3).
 5. FR-08–FR-10 and the ledger design still need the guide's approval (D-22).
 6. Diagrams (ER, schema) must be redrawn for the new tables (D-24).
+7. §6.1 percentages: one decimal, trailing zero trimmed (spec §4.5), not two decimals.
+8. Pool status rules (no auto-close, Out of stock tag), whole-rupee price input and the display-unit rule: spec §4.5.
+9. Audit hash serialisation for events without ledger rows: spec §5.3.
 
 ---
 
 ## 12. Build stages and prompts
 
-Work in stages. At the end of each stage: run the tests, commit with a clear message, give the user a 5-line report (done, tests, anything changed or assumed, anything needing a decision), and **wait for approval** before the next stage. Use plan mode for stages 2–7.
+Work in stages. At the end of each stage: run the tests, commit with a clear message, give the user a five-line report (done, tests, changed or assumed, needs a decision, next), and **wait for approval** before the next stage, unless the user has authorised a run of stages; then stop at the boundary they named. Use plan mode for stages 2–7.
 
 ### Stage 0: read and confirm (start prompt)
 
@@ -377,4 +415,4 @@ Work in stages. At the end of each stage: run the tests, commit with a clear mes
 
 ## 13. Open items (also in `docs/DECISION_LOG.md` §K)
 
-Guide approval for reference prices and FR-08–FR-10 · Gate 2 date (D-20), and the Gate 2 document the user will share · verify quality limits against the current official document · choose the mandi modal price seed · whether pool commodity, variety and Range can change after creation (default no) · master document and diagrams to be updated.
+Guide approval for reference prices and FR-08–FR-10 · Gate 2 date (D-20), and the Gate 2 document the user will share · verify quality limits against the current official document · choose the mandi modal price seed · whether pool commodity, variety and Range can change after creation (default no) · master document and diagrams to be updated · review of the hash serialisation (§5.3) by the E1 and E2 owners.

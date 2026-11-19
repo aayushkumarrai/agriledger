@@ -36,6 +36,7 @@ t "Create a pool directly as open"         "INSERT INTO pool(commodity_id,variet
 t "Range number 0"                         "INSERT INTO pool(commodity_id,variety,range_no,storage_location,min_order_g,display_unit,price_paise_per_kg) VALUES (1,'Rice',0,'x',100000,'kg',3000)"
 t "Range number 4"                         "INSERT INTO pool(commodity_id,variety,range_no,storage_location,min_order_g,display_unit,price_paise_per_kg) VALUES (1,'Rice',4,'x',100000,'kg',3000)"
 t "Sale on a pool that is not open (draft)" "$NEWPOOL; INSERT INTO event(pool_id,event_type,actor_user_id) VALUES ((SELECT max(pool_id) FROM pool),'SALE',5); INSERT INTO sale(event_id,pool_id,buyer_id,request_id,quantity_g,unit_price_paise_per_kg,gross_paise) VALUES ((SELECT max(event_id) FROM event),(SELECT max(pool_id) FROM pool),5,gen_random_uuid(),200000,3000,600000)"
+t "Sale on a closed pool (Manager closed it)" "UPDATE pool SET status='closed' WHERE pool_id=1; ${SALE1}100000,2500,250000)"
 t "Sale below minimum order (50 kg < 100 kg)" "${SALE1}50000,2500,125000)"
 t "Same request_id used twice (double click)" "INSERT INTO event(pool_id,event_type,actor_user_id) VALUES (1,'SALE',5); INSERT INTO sale(event_id,pool_id,buyer_id,request_id,quantity_g,unit_price_paise_per_kg,gross_paise) VALUES ((SELECT max(event_id) FROM event),1,5,(SELECT request_id FROM sale WHERE sale_id=1),200000,2500,500000)"
 t "Edit a photo row"                       "UPDATE pool_photo SET file_path='x' WHERE photo_id=1"

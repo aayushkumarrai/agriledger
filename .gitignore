@@ -1,0 +1,6 @@
+data/photos/
+.env
+*.env
+*:Zone.Identifier
+build/
+node_modules/

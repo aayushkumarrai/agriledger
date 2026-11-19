@@ -1,0 +1,50 @@
+#!/bin/bash
+# Each statement below MUST fail. Prints PASS when PostgreSQL rejects it.
+P="psql -h /tmp/pgd -p 5544 -U app_test -d agri -q -v ON_ERROR_STOP=1"
+NEWPOOL="INSERT INTO pool(commodity_id,variety,range_no,storage_location,min_order_g,display_unit,price_paise_per_kg) VALUES (1,'Rice',1,'x',100000,'kg',3000)"
+t(){ out=$($P -c "$2" 2>&1); rc=$?
+  if echo "$out" | grep -qE "does not exist|connection to server|could not connect"; then echo "FAIL  $1 (test could not run: $(echo "$out" | grep -m1 -E 'ERROR|error' | cut -c1-80))"; return; fi
+  if [ $rc -ne 0 ]; then echo "PASS  $1  -> $(echo "$out" | grep -m1 ERROR | cut -c1-110)"; else echo "FAIL  $1 (statement was accepted)"; fi; }
+ok(){ out=$($P -c "$2" 2>&1); rc=$?
+  if [ $rc -eq 0 ]; then echo "PASS  $1  (accepted, as it should be)"; else echo "FAIL  $1 -> $(echo "$out" | grep -m1 ERROR | cut -c1-110)"; fi; }
+t "Edit a ledger row (UPDATE)"            "UPDATE inventory_ledger SET delta_g=1 WHERE inv_id=1"
+t "Delete a payout row"                   "DELETE FROM financial_ledger WHERE fin_id=1"
+t "Truncate the audit chain"              "TRUNCATE ledger_entry"
+t "Edit a sale after commit"              "UPDATE sale SET gross_paise=1 WHERE sale_id=1"
+t "Make a BUYER account into a seller"    "INSERT INTO seller(seller_id,seller_name) VALUES (5,'x')"
+t "Negative farmer balance"               "UPDATE pool_seller_balance SET remaining_g=-1 WHERE pool_id=1 AND seller_id=2"
+t "Negative pool stock (oversell)"        "UPDATE pool SET total_stock_g=-1 WHERE pool_id=1"
+t "Zero-quantity contribution"            "INSERT INTO event(pool_id,event_type,actor_user_id) VALUES (1,'CONTRIBUTION',1); INSERT INTO contribution(event_id,pool_id,seller_id,quantity_g) VALUES ((SELECT max(event_id) FROM event),1,2,0)"
+t "SALE_GROSS row with a seller"          "INSERT INTO financial_ledger(event_id,pool_id,seller_id,entry_type,amount_paise) VALUES (5,1,2,'SALE_GROSS',1)"
+t "Duplicate chain position"              "INSERT INTO event(pool_id,event_type,actor_user_id) VALUES (1,'CONTRIBUTION',1); INSERT INTO ledger_entry(event_id,pool_id,sequence_no,previous_entry_id,previous_hash,entry_hash) VALUES ((SELECT max(event_id) FROM event),1,5,6,repeat('0',64),repeat('a',64))"
+t "Ledger row for an event of another pool" "INSERT INTO pool(commodity_id,variety,range_no,storage_location,min_order_g,display_unit,price_paise_per_kg) VALUES (1,'Rice',1,'x',100000,'kg',3000); INSERT INTO inventory_ledger(event_id,pool_id,movement_type,delta_g,resulting_stock_g) VALUES (5,2,'OUT',-1,0)"
+t "OUT movement with positive delta"      "INSERT INTO inventory_ledger(event_id,pool_id,movement_type,delta_g,resulting_stock_g) VALUES (5,1,'OUT',10,0)"
+t "Second payout for same seller & sale"  "INSERT INTO payout VALUES (1,2,1,1)"
+t "Non-hex hash"                          "INSERT INTO ledger_entry(event_id,pool_id,sequence_no,previous_entry_id,previous_hash,entry_hash) VALUES (3,1,9,5,repeat('0',64),repeat('z',64))"
+
+t "Chain link to another pool's entry"    "INSERT INTO pool(commodity_id,variety,range_no,storage_location,min_order_g,display_unit,price_paise_per_kg) VALUES (1,'Rice',1,'x',100000,'kg',3000); INSERT INTO event(pool_id,event_type,actor_user_id) VALUES ((SELECT max(pool_id) FROM pool),'POOL_CREATED',1); INSERT INTO ledger_entry(event_id,pool_id,sequence_no,previous_entry_id,previous_hash,entry_hash) VALUES ((SELECT max(event_id) FROM event),(SELECT max(pool_id) FROM pool),2,6,repeat('0',64),repeat('b',64))"
+t "Second entry with no predecessor"      "INSERT INTO event(pool_id,event_type,actor_user_id) VALUES (1,'CONTRIBUTION',1); INSERT INTO ledger_entry(event_id,pool_id,sequence_no,previous_entry_id,previous_hash,entry_hash) VALUES ((SELECT max(event_id) FROM event),1,6,NULL,repeat('0',64),repeat('c',64))"
+
+echo "--- Frontend rules added in schema v1.1 ---"
+SALE1="INSERT INTO event(pool_id,event_type,actor_user_id) VALUES (1,'SALE',5); INSERT INTO sale(event_id,pool_id,buyer_id,request_id,quantity_g,unit_price_paise_per_kg,gross_paise) VALUES ((SELECT max(event_id) FROM event),1,5,gen_random_uuid(),"
+t "Open a pool that has no photo"          "$NEWPOOL; UPDATE pool SET status='open' WHERE pool_id=(SELECT max(pool_id) FROM pool)"
+t "Create a pool directly as open"         "INSERT INTO pool(commodity_id,variety,range_no,storage_location,min_order_g,display_unit,price_paise_per_kg,status) VALUES (1,'Rice',1,'x',100000,'kg',3000,'open')"
+t "Range number 0"                         "INSERT INTO pool(commodity_id,variety,range_no,storage_location,min_order_g,display_unit,price_paise_per_kg) VALUES (1,'Rice',0,'x',100000,'kg',3000)"
+t "Range number 4"                         "INSERT INTO pool(commodity_id,variety,range_no,storage_location,min_order_g,display_unit,price_paise_per_kg) VALUES (1,'Rice',4,'x',100000,'kg',3000)"
+t "Sale on a pool that is not open (draft)" "$NEWPOOL; INSERT INTO event(pool_id,event_type,actor_user_id) VALUES ((SELECT max(pool_id) FROM pool),'SALE',5); INSERT INTO sale(event_id,pool_id,buyer_id,request_id,quantity_g,unit_price_paise_per_kg,gross_paise) VALUES ((SELECT max(event_id) FROM event),(SELECT max(pool_id) FROM pool),5,gen_random_uuid(),200000,3000,600000)"
+t "Sale below minimum order (50 kg < 100 kg)" "${SALE1}50000,2500,125000)"
+t "Same request_id used twice (double click)" "INSERT INTO event(pool_id,event_type,actor_user_id) VALUES (1,'SALE',5); INSERT INTO sale(event_id,pool_id,buyer_id,request_id,quantity_g,unit_price_paise_per_kg,gross_paise) VALUES ((SELECT max(event_id) FROM event),1,5,(SELECT request_id FROM sale WHERE sale_id=1),200000,2500,500000)"
+t "Edit a photo row"                       "UPDATE pool_photo SET file_path='x' WHERE photo_id=1"
+t "Delete a photo row"                     "DELETE FROM pool_photo WHERE photo_id=1"
+t "Edit a pool_change row"                 "UPDATE pool_change SET new_value='closed' WHERE change_id=1"
+t "Price change recorded under a status event" "INSERT INTO event(pool_id,event_type,actor_user_id) VALUES (1,'STATUS_CHANGED',1); INSERT INTO pool_change(event_id,pool_id,field,old_value,new_value,changed_by) VALUES ((SELECT max(event_id) FROM event),1,'PRICE','2500','2400',1)"
+t "Application role edits reference data"  "INSERT INTO commodity(name) VALUES ('Rice')"
+t "Application role edits quality limits"  "UPDATE commodity_parameter SET range1_max=99"
+echo "--- Rules that must ACCEPT (rolled back afterwards) ---"
+ok "Sale below minimum is allowed when it takes the whole remainder" "BEGIN; UPDATE pool SET min_order_g=2000000 WHERE pool_id=1; ${SALE1}1500000,2500,3750000); ROLLBACK"
+t "...but 1,400 kg of 1,500 kg remaining is still refused when min is 2,000 kg" "UPDATE pool SET min_order_g=2000000 WHERE pool_id=1; ${SALE1}1400000,2500,3500000)"
+echo "--- Second layer: triggers block changes even for a full-privilege user ---"
+P="psql -h /tmp/pgd -p 5544 -U postgres -d agri -q -v ON_ERROR_STOP=1"
+t "Superuser edits a ledger row"          "UPDATE ownership_ledger SET delta_g=1 WHERE own_id=1"
+t "Superuser deletes an audit entry"      "DELETE FROM ledger_entry WHERE sequence_no=3"
+t "Superuser truncates the inventory ledger" "TRUNCATE inventory_ledger"

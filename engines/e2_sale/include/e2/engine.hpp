@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "e1/invariants.hpp"
 
 namespace e2 {
@@ -136,6 +138,28 @@ struct IntegrityResult {
     std::optional<IntegrityBreak> first_broken;
 };
 
+// ---- reads for E4 (view models as JSON: integers only, decimal limits as text) ---------------------------------------
+
+// Who is asking. The role shapes what a query returns, as a second line of defence behind E4's route checks:
+// buyers never get farmer names, shares or payouts.
+struct Viewer {
+    enum class Role { Manager, Farmer, Buyer } role = Role::Buyer;
+    i64 user_id = 0;
+};
+
+struct AuthUser {
+    i64 user_id = 0;
+    std::string username, password_hash, type, name;
+    bool is_active = true;
+    bool must_change_password = true;
+};
+
+struct SessionInfo {
+    i64 user_id = 0;
+    std::string username, type, name;
+    bool must_change_password = true;
+};
+
 class Engine {
 public:
     explicit Engine(Config config);
@@ -164,6 +188,30 @@ public:
     // Reads that need the whole ledger history.
     ReconciliationStatus reconciliation(i64 pool_id);
     IntegrityResult integrity_check(i64 pool_id);
+
+    // ---- accounts and sessions (E4 hashes and verifies passwords; E2 only stores and looks up) ----
+    std::optional<AuthUser> find_user(const std::string& username);
+    void create_session(i64 user_id, const std::string& token_hex, int ttl_seconds);
+    std::optional<SessionInfo> find_session(const std::string& token_hex);   // only unexpired sessions of active users
+    void delete_session(const std::string& token_hex);
+    void delete_other_sessions(i64 user_id, const std::string& keep_token_hex);   // after a password change
+    void set_password(i64 user_id, const std::string& new_password_hash);    // also clears must_change_password
+    nlohmann::json list_users();
+
+    // ---- reference data ----
+    nlohmann::json commodities();         // with each Range's quality limits
+    nlohmann::json reference_prices();    // latest MSP and mandi modal price per commodity (paise per quintal)
+
+    // ---- pools, shaped for the viewer ----
+    nlohmann::json list_pools(const Viewer& viewer);
+    nlohmann::json pool_detail(i64 pool_id, const Viewer& viewer);          // DomainError NOT_FOUND if the viewer may not see it
+    nlohmann::json pool_photos(i64 pool_id, const Viewer& viewer);          // buyers and farmers: the 3 newest
+    nlohmann::json ledger_page(i64 pool_id, const std::string& ledger, std::optional<i64> before_id, int limit);   // Manager only
+    nlohmann::json my_pools(i64 farmer_id);
+    nlohmann::json farmer_statement(i64 farmer_id, i64 pool_id);
+    nlohmann::json my_purchases(i64 buyer_id);
+    // Everything one committed event wrote (for the live feed). Null if the event does not exist.
+    nlohmann::json event_view(i64 event_id);
 
     struct Impl;   // opaque: defined inside E2 only
 

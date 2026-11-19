@@ -1,3 +1,62 @@
-#include <cstdio>
-// Stage 1 placeholder: the real server is built in Stage 5.
-int main() { std::puts("agriledger_server: not implemented yet"); return 0; }
+// agriledger_server
+//   agriledger_server                      run the server
+//   agriledger_server create-manager USERNAME "FULL NAME"
+//        creates a Pool Manager account (there is no self-registration); the temporary password is read from the
+//        first line of standard input. The Manager must choose a new password at first login.
+// Settings come from the environment: AGRILEDGER_DB (libpq connection string), AGRILEDGER_PORT, AGRILEDGER_BIND,
+// AGRILEDGER_PHOTO_DIR, AGRILEDGER_COOKIE_SECURE=1 when served over HTTPS.
+#include <atomic>
+#include <chrono>
+#include <csignal>
+#include <cstdlib>
+#include <iostream>
+#include <string>
+#include <thread>
+
+#include "e4/server.hpp"
+
+namespace {
+std::atomic<bool> g_stop{false};
+void on_signal(int) { g_stop = true; }
+
+std::string env(const char* name, const std::string& fallback = "") {
+    const char* v = std::getenv(name);
+    return v && *v ? v : fallback;
+}
+}  // namespace
+
+int main(int argc, char** argv) {
+    e4::Config cfg;
+    cfg.db_conninfo = env("AGRILEDGER_DB");
+    if (cfg.db_conninfo.empty()) {
+        std::cerr << "Set AGRILEDGER_DB to the libpq connection string of the application login (see README).\n";
+        return 2;
+    }
+    cfg.bind_address = env("AGRILEDGER_BIND", "127.0.0.1");
+    cfg.photo_dir = env("AGRILEDGER_PHOTO_DIR", "data/photos");
+    cfg.cookie_secure = env("AGRILEDGER_COOKIE_SECURE") == "1";
+
+    try {
+        cfg.port = static_cast<std::uint16_t>(std::stoi(env("AGRILEDGER_PORT", "8080")));   // inside the try: a bad value is an error message, not a crash
+        e4::Server server(cfg);
+        if (argc >= 2 && std::string(argv[1]) == "create-manager") {
+            if (argc != 4) { std::cerr << "usage: agriledger_server create-manager USERNAME \"FULL NAME\"  (password on stdin)\n"; return 2; }
+            std::string password;
+            std::getline(std::cin, password);
+            if (password.size() < 8) { std::cerr << "the temporary password must be at least 8 characters\n"; return 2; }
+            const std::int64_t id = server.create_account(argv[3], argv[2], "MANAGER", password);
+            std::cout << "created Pool Manager " << argv[2] << " (user " << id << "); they must change the password at first login\n";
+            return 0;
+        }
+        server.start();
+        std::cout << "AgriLedger listening on " << cfg.bind_address << ":" << server.port() << "\n" << std::flush;
+        std::signal(SIGINT, on_signal);
+        std::signal(SIGTERM, on_signal);
+        while (!g_stop) std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        server.stop();
+    } catch (const std::exception& e) {
+        std::cerr << "error: " << e.what() << "\n";
+        return 1;
+    }
+    return 0;
+}

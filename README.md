@@ -33,6 +33,19 @@ scripts/test.sh cpp      # only the C++ unit tests
 The database tests use a throw-away database `agriledger_test` in the same container and read their connection from
 `PGHOST`, `PGPORT`, `PGUSER`, `PGDATABASE` (and `PGPASSWORD`); `scripts/test.sh` fills them in from `.env`.
 
+## Run the server
+```bash
+cmake --build build -j
+echo 'a-temporary-password' | scripts/run_server.sh create-manager alice "Alice Pool Manager"   # once; no self-registration
+scripts/run_server.sh                                                                            # http://127.0.0.1:8080
+```
+The Manager must choose a new password at first login, then creates Farmer and Buyer accounts through the API.
+Settings (environment): `AGRILEDGER_DB` (set by the script from `.env`), `AGRILEDGER_PORT`, `AGRILEDGER_BIND`,
+`AGRILEDGER_PHOTO_DIR`, `AGRILEDGER_COOKIE_SECURE=1` when served over HTTPS. Crow and Asio are fetched by CMake at pinned releases
+(a system `libasio-dev` is used if present).
+
+Concurrency demonstration (protected path against the harness-only unprotected counter): `scripts/demo_concurrency.sh`.
+
 ## Layout
 See spec §2. Engines: `engines/e1_audit` (allocation and hashing), `e2_sale` (SQL transactions), `e3_queue` (per-pool queue),
 `e4_web` (server). Frontend in `web/`. Tests in `tests/` and `db/tests/`.

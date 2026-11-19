@@ -254,6 +254,7 @@ SaleOutcome Engine::execute_sale(const SaleRequest& req, const SaleStepHook* hoo
         const PoolRow pool = lock_pool(tx, req.pool_id);
         // A twin request may have committed while this one waited for the lock.
         if (auto dup = find_existing_sale(tx, req)) return accepted(std::move(*dup));
+        require(!tx.exec_params("SELECT 1 FROM buyer WHERE buyer_id = $1", req.buyer_id).empty(), "NOT_FOUND", "buyer not found");
         step(SaleStep::PoolLocked);
 
         // 3-6. Checks against the locked row, in the spec's order. A rejection leaves nothing behind (tx aborts).

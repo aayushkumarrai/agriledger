@@ -1,18 +1,22 @@
 include(GoogleTest)
 
 add_executable(unit_tests
-  unit/smoke_test.cpp
   unit/e1_allocation_test.cpp
   unit/e1_hashing_test.cpp
   unit/e1_invariants_test.cpp
   unit/e3_queue_test.cpp)
-target_link_libraries(unit_tests PRIVATE e1_audit e2_sale e3_queue e4_web GTest::gtest_main)
+target_link_libraries(unit_tests PRIVATE e1_audit e3_queue GTest::gtest_main)
 gtest_discover_tests(unit_tests)
 
 # Tests that need the real PostgreSQL container: scripts/test.sh creates the database and sets
 # AGRI_TEST_CONNINFO and AGRI_TEST_SUPER_CONNINFO. Without them these tests FAIL (they are never skipped).
 add_executable(integration_tests integration/e2_test.cpp)
 target_link_libraries(integration_tests PRIVATE e2_sale GTest::gtest_main)
+
+# E4 over HTTP and WebSocket: role matrix, every sale reason, photos, views, integrity check, live feed
+add_executable(server_tests integration/e4_test.cpp)
+target_link_libraries(server_tests PRIVATE e4_web GTest::gtest_main)
+gtest_discover_tests(server_tests PROPERTIES TIMEOUT 600)
 gtest_discover_tests(integration_tests PROPERTIES TIMEOUT 300)
 
 # Concurrency: 50 buyers x 20 runs through E3 into E2, plus the harness-only unprotected comparison (never in the server).

@@ -250,6 +250,20 @@ The screen says it in words, e.g. "Record 4 (a sale) does not match." Raw hashes
 
 ---
 
+### 6.5 Details settled while building E4 [PROPOSED, for Jairaj to review]
+
+- **Errors** are `{"error": CODE}` with the status codes of §6.3: `UNAUTHENTICATED` 401, `FORBIDDEN` 403, `PASSWORD_CHANGE_REQUIRED` 403 (until the temporary password is changed; only change-password and logout work), `BAD_ORIGIN` 403, `NOT_FOUND` 404, `BAD_JSON`/`MISSING_FIELD`/`INVALID_FIELD`/`INVALID` 400, `UNSUPPORTED_MEDIA_TYPE`/`UNSUPPORTED_IMAGE` 415, `BODY_TOO_LARGE`/`PHOTO_TOO_LARGE` 413, `POOL_NOT_OPEN`/`NO_CHANGE`/`INVALID_TRANSITION`/`PHOTO_REQUIRED`/`DUPLICATE_USERNAME`/`REQUEST_ID_CONFLICT` 409, `TOO_MANY_ATTEMPTS` 429 with `Retry-After`, `BUSY` 503 with `Retry-After`, `INTERNAL` 500 (details stay in the server log).
+- **Numbers.** JSON integers only; a decimal or a string where a number is expected is a 400. Shares are `share_permille` (one decimal of a percent as an integer, half-up); quality limits are decimal text such as `"17.00"`.
+- **Login** is throttled: 5 failures per username and address, 50 per address, in 5 minutes, then 429. An unknown username takes as long as a wrong password. A new password ends every other session of that user.
+- **Cross-site protection:** SameSite=Strict cookie, JSON endpoints require `Content-Type: application/json`, and a request that carries an `Origin` header from another site is refused (also for `/live`). A WebSocket closes when its session ends (logout, password change, expiry, checked every ~15 s).
+- **Accounts:** `POST /users` creates only FARMER or BUYER; a Manager is created with `agriledger_server create-manager`. Usernames are 3-50 characters of `a-z 0-9 . _ -`; passwords at least 8 characters.
+- **`GET /pools/{id}/ledgers/{inventory|ownership|financial}?before=<id>&limit=<1..200>`** returns `{rows, next_before_id}` newest first; the first inventory page also carries `changes` (price and status changes from `pool_change`, `kind: "change"`).
+- **Photos** are stored as `data/photos/<sha256>.<jpg|png>` (the client's file name is never used), served at `/photos/<name>` to logged-in users only. Crow buffers the whole request body before a handler runs and has no size hook, so the 5 MB limit is checked after reading; put a body-size limit in front of the server if it is ever exposed beyond the demo.
+- **`GET /me/pools`, `GET /farmers/{id}/statement`, `GET /me/purchases`** return the view models documented by the tests in `tests/integration/e4_test.cpp` (`ViewsMatchTheWorkedExample`).
+- **`PATCH /pools/{id}` with both `price_paise_per_kg` and `status`** applies them in that order as two separate audited events (spec §5.2: each change is its own event). If the second is refused, the first stays; the response then carries the second one's error.
+- **Sales hold an HTTP worker thread** while they wait in the per-pool queue (at most `queue_timeout`, then BUSY); size `http_threads` above the number of simultaneous buyers you expect.
+- WebSocket `resync` message: sent to all clients if the server's database listener had to reconnect; the client re-fetches current state.
+
 ## 7. Live feed (WebSocket `/live`) [PROPOSED]
 
 E2 issues `NOTIFY ledger_events, '<event_id>:<pool_id>'` inside the transaction (delivered only on commit). E4's single listener connection fetches the event and sends JSON to subscribed sockets, filtered by role.

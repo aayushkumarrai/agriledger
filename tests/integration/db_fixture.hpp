@@ -52,6 +52,8 @@ struct World {
     i64 manager = 0, farmer[3] = {0, 0, 0}, buyer = 0, buyer2 = 0, commodity = 0;
 
     explicit World(e2::Engine& e) : eng(e) {
+        if (super_conninfo().empty() || app_conninfo().empty())
+            throw std::runtime_error("AGRI_TEST_CONNINFO / AGRI_TEST_SUPER_CONNINFO are not set; run tests with scripts/test.sh");
         pqxx::connection admin(super_conninfo());
         pqxx::nontransaction n(admin);
         commodity = n.exec1("SELECT commodity_id FROM commodity WHERE name = 'Paddy'")[0].as<i64>();

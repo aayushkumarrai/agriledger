@@ -82,7 +82,8 @@ enum class Reason { OutOfStock, InsufficientStock, PriceChanged, BelowMinOrder, 
 const char* to_string(Reason r);            // OUT_OF_STOCK INSUFFICIENT_STOCK PRICE_CHANGED BELOW_MIN_ORDER POOL_NOT_OPEN
 
 struct SaleOutcome {
-    enum class Status { Accepted, Rejected, Transient } status = Status::Rejected;
+    // Transient: E2 changed nothing and a retry may work. Busy: set by E3 only, after its retries or its queue timeout ran out.
+    enum class Status { Accepted, Rejected, Transient, Busy } status = Status::Rejected;
     Receipt receipt;                        // when Accepted
     Reason reason = Reason::PoolNotOpen;    // when Rejected
     i64 stock_g = 0;                        // INSUFFICIENT_STOCK: remaining stock

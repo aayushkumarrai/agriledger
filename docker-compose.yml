@@ -1,0 +1,26 @@
+# PostgreSQL 16 only (spec §2). First start loads db/schema.sql, db/seed_reference.sql and
+# creates the application LOGIN user. Passwords come from the git-ignored .env file.
+# Reset everything: docker compose down -v
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: agriledger
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?copy .env.example to .env}
+      APP_DB_USER: ${APP_DB_USER:-agriledger_user}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?copy .env.example to .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./db/seed_reference.sql:/docker-entrypoint-initdb.d/02_seed_reference.sql:ro
+      - ./db/docker/03_app_user.sh:/docker-entrypoint-initdb.d/03_app_user.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d agriledger"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  pgdata:

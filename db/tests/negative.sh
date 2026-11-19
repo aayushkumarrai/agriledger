@@ -1,6 +1,10 @@
 #!/bin/bash
 # Each statement below MUST fail. Prints PASS when PostgreSQL rejects it.
-P="psql -h /tmp/pgd -p 5544 -U app_test -d agri -q -v ON_ERROR_STOP=1"
+# Connection comes from the environment: PGHOST PGPORT PGDATABASE, and PGUSER/PGPASSWORD for the
+# application role. The "superuser" section at the end uses PGSUPERUSER/PGSUPERPASSWORD.
+: "${PGHOST:?set PGHOST}" "${PGPORT:?set PGPORT}" "${PGUSER:?set PGUSER (application role login)}" "${PGDATABASE:?set PGDATABASE}"
+: "${PGSUPERUSER:=postgres}" "${PGSUPERPASSWORD:?set PGSUPERPASSWORD}"
+P="psql -q -v ON_ERROR_STOP=1"
 NEWPOOL="INSERT INTO pool(commodity_id,variety,range_no,storage_location,min_order_g,display_unit,price_paise_per_kg) VALUES (1,'Rice',1,'x',100000,'kg',3000)"
 t(){ out=$($P -c "$2" 2>&1); rc=$?
   if echo "$out" | grep -qE "does not exist|connection to server|could not connect"; then echo "FAIL  $1 (test could not run: $(echo "$out" | grep -m1 -E 'ERROR|error' | cut -c1-80))"; return; fi
@@ -44,7 +48,7 @@ echo "--- Rules that must ACCEPT (rolled back afterwards) ---"
 ok "Sale below minimum is allowed when it takes the whole remainder" "BEGIN; UPDATE pool SET min_order_g=2000000 WHERE pool_id=1; ${SALE1}1500000,2500,3750000); ROLLBACK"
 t "...but 1,400 kg of 1,500 kg remaining is still refused when min is 2,000 kg" "UPDATE pool SET min_order_g=2000000 WHERE pool_id=1; ${SALE1}1400000,2500,3500000)"
 echo "--- Second layer: triggers block changes even for a full-privilege user ---"
-P="psql -h /tmp/pgd -p 5544 -U postgres -d agri -q -v ON_ERROR_STOP=1"
+P="env PGUSER=$PGSUPERUSER PGPASSWORD=$PGSUPERPASSWORD psql -q -v ON_ERROR_STOP=1"
 t "Superuser edits a ledger row"          "UPDATE ownership_ledger SET delta_g=1 WHERE own_id=1"
 t "Superuser deletes an audit entry"      "DELETE FROM ledger_entry WHERE sequence_no=3"
 t "Superuser truncates the inventory ledger" "TRUNCATE inventory_ledger"

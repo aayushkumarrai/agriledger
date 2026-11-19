@@ -1,6 +1,10 @@
-data/photos/
+# secrets and local state
 .env
 *.env
-*:Zone.Identifier
+data/photos/*
+!data/photos/.gitkeep
+# build output
 build/
 node_modules/
+# Windows download markers
+*:Zone.Identifier

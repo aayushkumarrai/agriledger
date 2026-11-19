@@ -1,15 +1,16 @@
 #!/bin/bash
-# Linux only, run from the repo root. On other systems use docker-compose (spec §12, Stage 1).
-# Fresh throw-away PostgreSQL cluster for schema tests (socket dir /tmp/pgd, port 5544).
-set -e
-PGBIN=/usr/lib/postgresql/16/bin
-pkill -u postgres -f "postgres -D /tmp/pgd/data" 2>/dev/null || true; sleep 1
-rm -rf /tmp/pgd; mkdir -p /tmp/pgd; chown postgres:postgres /tmp/pgd
-su postgres -c "$PGBIN/initdb -D /tmp/pgd/data -A trust -U postgres >/dev/null"
-su postgres -c "$PGBIN/pg_ctl -D /tmp/pgd/data -o '-p 5544 -k /tmp/pgd -c listen_addresses=' -l /tmp/pgd/log -w start >/dev/null"
-P="psql -h /tmp/pgd -p 5544 -U postgres -q -v ON_ERROR_STOP=1"
-$P -c "CREATE DATABASE agri"
-$P -d agri -f db/schema.sql
-$P -d agri -f db/seed_reference.sql
-$P -d agri -c "CREATE ROLE app_test LOGIN; GRANT agriledger_app TO app_test"
-echo "test database ready"
+# Creates a fresh, empty test database (PGDATABASE) in the running PostgreSQL container and loads
+# db/schema.sql and db/seed_reference.sql into it as the superuser. Run from the repo root.
+# Environment: PGHOST PGPORT PGDATABASE PGSUPERUSER(default postgres) PGSUPERPASSWORD
+set -euo pipefail
+: "${PGHOST:?}" "${PGPORT:?}" "${PGDATABASE:?}" "${PGSUPERPASSWORD:?}"
+: "${PGSUPERUSER:=postgres}"
+case "$PGDATABASE" in
+  *_test) ;;
+  *) echo "Refusing to drop and recreate '$PGDATABASE': the test database name must end in _test" >&2; exit 1 ;;
+esac
+export PGUSER="$PGSUPERUSER" PGPASSWORD="$PGSUPERPASSWORD"
+psql -q -v ON_ERROR_STOP=1 -d postgres -c "DROP DATABASE IF EXISTS \"$PGDATABASE\" WITH (FORCE)" -c "CREATE DATABASE \"$PGDATABASE\""
+psql -q -v ON_ERROR_STOP=1 -d "$PGDATABASE" -f db/schema.sql
+psql -q -v ON_ERROR_STOP=1 -d "$PGDATABASE" -f db/seed_reference.sql
+echo "test database $PGDATABASE ready"

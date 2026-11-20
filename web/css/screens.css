@@ -84,3 +84,37 @@ a.btn.is-disabled { pointer-events: none; }
   .activity__row .num { text-align: left; }
   .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---- pool manager --------------------------------------------------------------------------------------------------- */
+.page-head--tools { margin-bottom: var(--s4); }
+.page-head--tight { margin-bottom: 0; }
+.pool-code { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.key-number--xl { font-size: 44px; }
+.meter { height: 12px; border: 1px solid var(--field-border); border-radius: var(--radius-sm); background: var(--field); overflow: hidden; }
+.meter__fill { height: 100%; width: 0; background: var(--leaf); }
+.photo-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); }
+.photo-row .photo { width: 100%; }
+.photo-row--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid--unequal { grid-template-columns: minmax(0, 11fr) minmax(0, 12fr); }
+.grid--tight { gap: var(--s4); }
+.grid--forms { align-items: start; }
+.detail-grid--create { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+.range-note { max-width: 32ch; }
+.form-actions { padding-top: var(--s4); border-top: 1px solid var(--rule); }
+.steps { padding-left: var(--s6); list-style: decimal; display: flex; flex-direction: column; gap: var(--s2); }
+.ledgers { align-items: start; gap: var(--s4); }
+.ledger__label { padding: var(--s3) var(--s2) 0; }
+.ledger__more { padding: var(--s2); }
+.ledger__more:has(button[hidden]) { display: none; }
+.ledger .table td, .ledger .table th { padding-left: var(--s2); padding-right: var(--s2); }
+.ledger__change td { background: var(--grey-tint); color: var(--grey-text); font-style: normal; }
+.ledger__change .icon { vertical-align: -3px; }
+@media (max-width: 1023px) { .grid.cols-3.ledgers { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 719px) {
+  .grid--unequal, .detail-grid--create { grid-template-columns: minmax(0, 1fr); }
+  .key-number--xl { font-size: 36px; }
+  .photo-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.accounts { display: flex; flex-direction: column; }
+.accounts__row { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s3) 0; border-top: 1px solid var(--rule); flex-wrap: wrap; }
+.accounts__who { display: flex; flex-direction: column; }

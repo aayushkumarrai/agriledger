@@ -3,7 +3,7 @@
 import { h, icon } from './dom.js';
 import { t } from './i18n.js';
 import { tag, poolStatusTag } from './components.js';
-import { formatQuantity, formatPaise, formatPricePerQuintal, formatPermille, formatDateTime, getUnit, toBigInt } from './format.js';
+import { formatQuantity, formatPaise, formatPricePerQuintal, formatPermille, formatDateTime, padColumn, getUnit, toBigInt } from './format.js';
 
 const signed = (g, unit) => {
   const n = toBigInt(g);
@@ -24,14 +24,16 @@ export function statementView(data) {
     tile('statement.paid', formatPaise(s.paid_paise), null));
 
   const L = { date: t('statement.date'), what: t('statement.what'), grain: t(`statement.grain_${unit}`), have: t('statement.have'), money: t('statement.money') };
-  const rows = data.rows.map((r) => {
+  const grainCol = padColumn(data.rows.map((r) => signed(r.delta_g, unit)));   // figures in a column share one number of decimals
+  const haveCol = padColumn(data.rows.map((r) => formatQuantity(r.left_g, unit)));
+  const rows = data.rows.map((r, i) => {
     const sale = r.kind === 'sale';
     const what = sale
       ? t('statement.sale_row', { sold: `${formatQuantity(r.pool_sale_g, unit)} ${unitText}`, price: formatPricePerQuintal(r.unit_price_paise_per_kg), share: formatPermille(r.share_permille) })
       : t('statement.deposit_row');
     return h('tr', {},
       h('td', { class: 'nowrap', 'data-label': L.date }, formatDateTime(r.at)), h('td', { 'data-label': L.what }, what),
-      h('td', { class: 'num', 'data-label': L.grain }, signed(r.delta_g, unit)), h('td', { class: 'num', 'data-label': L.have }, formatQuantity(r.left_g, unit)),
+      h('td', { class: 'num', 'data-label': L.grain }, grainCol[i]), h('td', { class: 'num', 'data-label': L.have }, haveCol[i]),
       h('td', { class: 'num', 'data-label': L.money }, r.paise === null ? t('common.none') : h('strong', {}, formatPaise(r.paise))));
   });
   const table = h('section', { class: 'card card--table' },

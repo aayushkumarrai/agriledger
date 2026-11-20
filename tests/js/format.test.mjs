@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { WEB } from './helpers.mjs';
 import {
-  toBigInt, formatQuantityInput, formatPricePerQuintalWhole, groupIndian, formatPaise, formatPricePerQuintal, formatPricePerKg, formatQuantity, totalPaise, formatPermille,
+  toBigInt, padColumn, formatQuantityInput, formatPricePerQuintalWhole, groupIndian, formatPaise, formatPricePerQuintal, formatPricePerKg, formatQuantity, totalPaise, formatPermille,
   parseQuantity, parsePricePerQuintal, formatDateTime, formatDate, getUnit, setUnit, MAX_GRAMS,
 } from '../../web/js/format.js';
 
@@ -38,6 +38,15 @@ test('prices: paise per kg shown per quintal and per kg', () => {
   assert.equal(formatPricePerKg(2500), '₹25.00');
   assert.equal(formatPricePerQuintal(2441), '₹2,441.00');   // the paddy MSP, 244,100 paise per quintal
   assert.equal(formatPaise(244100), '₹2,441.00');
+});
+
+test('columns of numbers are padded to one number of decimals', () => {
+  assert.deepEqual(padColumn(['9.75', '10.0', '4.5']), ['9.75', '10.00', '4.50']);
+  assert.deepEqual(padColumn(['+3.0', '\u22121.25', '12,000.5']), ['+3.00', '\u22121.25', '12,000.50']);
+  assert.deepEqual(padColumn(['15.0', '4.5']), ['15.0', '4.5']);
+  assert.deepEqual(padColumn(['\u2013', '2.25', '3.5']), ['\u2013', '2.25', '3.50']);
+  assert.deepEqual(padColumn(['5', '2.5']), ['5.0', '2.5']);
+  assert.deepEqual(padColumn([]), []);
 });
 
 test('whole-rupee prices for cards', () => {

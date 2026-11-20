@@ -4,7 +4,7 @@ import { t } from '../i18n.js';
 import { api } from '../api.js';
 import { h, clear, debounce, append } from '../dom.js';
 import { loadInto, unitToggle, onUnitChange, poolCode } from '../components.js';
-import { formatQuantity, formatPricePerQuintal, formatPaise, formatDateTime, getUnit } from '../format.js';
+import { formatQuantity, formatPricePerQuintal, formatPaise, formatDateTime, padColumn, getUnit } from '../format.js';
 
 let data = [];
 const holder = h('div', {});
@@ -19,11 +19,12 @@ append(main, [
 function table(rows) {
   const unit = getUnit();
   const L = { date: t('purchases.date'), pool: t('purchases.pool'), quantity: t(`purchases.quantity_${unit}`), price: t('purchases.price'), total: t('purchases.total'), receipt: t('purchases.receipt') };
+  const quantities = padColumn(rows.map((r) => formatQuantity(r.quantity_g, unit)));
   clear(holder).append(h('div', { class: 'card card--table' }, h('table', { class: 'table table--stack' },
     h('thead', {}, h('tr', {}, h('th', {}, t('purchases.date')), h('th', {}, t('purchases.pool')), h('th', { class: 'num' }, t(`purchases.quantity_${unit}`)), h('th', { class: 'num' }, t('purchases.price')), h('th', { class: 'num' }, t('purchases.total')), h('th', { class: 'num' }, t('purchases.receipt')))),
-    h('tbody', {}, rows.map((r) => h('tr', {},
+    h('tbody', {}, rows.map((r, i) => h('tr', {},
       h('td', { class: 'nowrap', 'data-label': L.date }, formatDateTime(r.at)), h('td', { 'data-label': L.pool }, `${poolCode(r.pool_id)} · ${r.commodity} · ${r.variety}`),
-      h('td', { class: 'num', 'data-label': L.quantity }, formatQuantity(r.quantity_g, unit)), h('td', { class: 'num', 'data-label': L.price }, formatPricePerQuintal(r.unit_price_paise_per_kg)),
+      h('td', { class: 'num', 'data-label': L.quantity }, quantities[i]), h('td', { class: 'num', 'data-label': L.price }, formatPricePerQuintal(r.unit_price_paise_per_kg)),
       h('td', { class: 'num', 'data-label': L.total }, h('strong', {}, formatPaise(r.gross_paise))), h('td', { class: 'num nowrap', 'data-label': L.receipt }, r.receipt_no)))))));
 }
 

@@ -78,7 +78,7 @@ export function pageAudit({ viewportWidth, allowManyPrimary }) {
 
   // 4. tap targets: 44 px (48 on a phone); the unit toggle is drawn 36 px with an 8 px invisible extension
   const need = viewportWidth < 720 ? 48 : 44;
-  for (const el of document.querySelectorAll('button, a.btn, .nav a, input:not([type=checkbox]):not([type=hidden]), select, .photo--add, [role=button]')) {
+  for (const el of document.querySelectorAll('button, a.btn, .nav a, input:not([type=checkbox]):not([type=hidden]):not(.visually-hidden), select, .photo--add, [role=button]')) {
     if (!visible(el) || el.closest('[data-demo-small]')) continue;
     const r = el.getBoundingClientRect();
     const extra = el.classList.contains('toggle__opt') && viewportWidth >= 720 ? 8 : 0;
@@ -179,9 +179,9 @@ export function pageAudit({ viewportWidth, allowManyPrimary }) {
   const stray = /(^|[^\w.])(null|undefined|NaN|\[object Object\])([^\w]|$)/.exec(document.body.innerText);
   if (stray) fail('stray-value', `the page prints "${stray[2]}"`);
 
-  // 9. layout: nothing scrolls sideways
+  // 9. layout: nothing scrolls sideways (a stacked table's header is clipped away on a phone, so it is not counted)
   if (root.scrollWidth > viewportWidth + 1) fail('overflow', `page is ${root.scrollWidth} px wide in a ${viewportWidth} px window`);
-  for (const el of all) { if (visible(el)) { const r = el.getBoundingClientRect(); if (r.right > viewportWidth + 1 && !el.closest('.sprite')) { fail('overflow', `${label(el)} sticks out to ${Math.round(r.right)} px`); break; } } }
+  for (const el of all) { if (visible(el)) { const r = el.getBoundingClientRect(); if (r.right > viewportWidth + 1 && !el.closest('.sprite') && !el.closest('.table--stack thead')) { fail('overflow', `${label(el)} sticks out to ${Math.round(r.right)} px`); break; } } }
 
   return { failures, notes };
 }

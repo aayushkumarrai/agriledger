@@ -90,6 +90,18 @@ export function formatQuantityInput(grams, unit = 'quintal') {
   return fraction === '' ? whole.toString() : `${whole}.${fraction}`;
 }
 
+// Pads a column of formatted numbers to the same number of decimals, so right-aligned figures line up on the decimal point:
+// ["9.75", "10.0", "+3.5"] -> ["9.75", "10.00", "+3.50"]. Texts that are not numbers (such as a dash) are left alone.
+export function padColumn(texts) {
+  const decimals = (s) => (/^[\u2212+-]?[\d,]+(\.\d+)?$/.test(s) ? (s.split('.')[1] || '').length : -1);
+  const most = texts.reduce((m, s) => (decimals(s) > m ? decimals(s) : m), 0);
+  return texts.map((s) => {
+    const d = decimals(s);
+    if (d < 0 || d === most) return s;
+    return (d === 0 && !s.includes('.') ? `${s}.` : s) + '0'.repeat(most - d);
+  });
+}
+
 // gross = round_half_up(grams x paise-per-kg / 1000), rounded once: the same rule the server uses.
 export function totalPaise(grams, paisePerKg) {
   return (toBigInt(grams) * toBigInt(paisePerKg) + 500n) / 1000n;

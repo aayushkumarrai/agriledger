@@ -56,9 +56,10 @@ export function startPurchase({ pool, grams, buyer = null, farmerNames = {}, onF
   }
 
   function receiptView(r) {
-    const split = r.payouts ? h('table', { class: 'table' },
-      h('thead', {}, h('tr', {}, h('th', {}, t('table.farmer')), h('th', { class: 'num' }, t('sale.allocated')), h('th', { class: 'num' }, t('table.paid_out')))),
-      h('tbody', {}, r.payouts.map((p) => h('tr', {}, h('td', { class: 'nowrap' }, farmerNames[p.seller_id] || `#${p.seller_id}`), h('td', { class: 'num' }, qty(p.alloc_g)), h('td', { class: 'num' }, formatPaise(p.paise)))))) : null;
+    const SL = { f: t('table.farmer'), a: t('sale.allocated'), p: t('table.paid_out') };
+    const split = r.payouts ? h('table', { class: 'table table--stack' },
+      h('thead', {}, h('tr', {}, h('th', {}, SL.f), h('th', { class: 'num' }, SL.a), h('th', { class: 'num' }, SL.p))),
+      h('tbody', {}, r.payouts.map((p) => h('tr', {}, h('td', { 'data-label': SL.f }, farmerNames[p.seller_id] || `#${p.seller_id}`), h('td', { class: 'num', 'data-label': SL.a }, qty(p.alloc_g)), h('td', { class: 'num', 'data-label': SL.p }, formatPaise(p.paise)))))) : null;
     return [
       h('p', {}, tag('ok', t('sale.tag.accepted'), 'check')),
       h('h2', {}, t('sale.done_title')),

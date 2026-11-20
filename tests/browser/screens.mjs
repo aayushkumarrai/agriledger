@@ -2,7 +2,7 @@
 // Run through scripts/screens_test.sh (it prepares the database). Screenshots go to tests/browser/out/.
 import { startServer, launch, newPage, review, VIEWPORTS } from './lib.mjs';
 import { randomUUID } from 'node:crypto';
-import { seed, PASS, TEMP } from './fixtures.mjs';
+import { seed, PASS, TEMP, png, Api } from './fixtures.mjs';
 
 const which = process.argv[2] || 'all';
 const { child, port, env } = await startServer();
@@ -299,7 +299,173 @@ async function farmer(data, vp) {
   await context.close();
 }
 
-const scenarios = { login, buyer, farmer };
+// ---- pool manager -----------------------------------------------------------------------------------------------------
+async function manager(data, vp) {
+  const { context, page } = await newPage(browser, base, vp);
+  const stem = (n) => `${n}-${vp.label}`;
+  await uiLogin(page, data.manager.username);
+  await page.waitForURL(/\/manager\/pools\.html/); await ready(page); await page.waitForSelector('.table--rows tbody tr');
+
+  // the pools table
+  tally(await review(page, stem('manager-pools'), vp, { shots: { table: '.card--table' } }));
+  const listText = await page.textContent('main');
+  check(/Draft/.test(listText) && /Out of stock/.test(listText) && /Reconciled/.test(listText), 'the table shows draft, out of stock and reconciled');
+  await page.selectOption('select[aria-label="Status"]', 'draft');
+  check((await page.locator('.table--rows tbody tr').count()) >= 1 && !(await page.textContent('main')).includes('Sona Masuri'), 'the status filter shows only drafts');
+  await page.selectOption('select[aria-label="Status"]', '');
+  page.allowedStatuses = [500];
+  await page.route('**/pools', (route) => route.request().method() === 'GET' ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"INTERNAL"}' }) : route.continue());
+  await page.reload(); await ready(page); await page.waitForSelector('.notice--bad');
+  tally(await review(page, stem('manager-pools-error'), vp, { skipGrey: true }));
+  await page.unroute('**/pools'); page.allowedStatuses = [];
+  await page.route('**/pools', async (route) => { await sleep(1500); await route.continue(); });
+  await page.reload(); await page.waitForSelector('.skeleton');
+  tally(await review(page, stem('manager-pools-loading'), vp, { skipGrey: true }));
+  await page.unroute('**/pools'); await ready(page);
+  await page.route('**/pools', (route) => route.request().method() === 'GET' ? route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }) : route.continue());
+  await page.reload(); await ready(page); await page.waitForSelector('.state');
+  tally(await review(page, stem('manager-pools-empty'), vp, { skipGrey: true, allowManyPrimary: true }));
+  await page.unroute('**/pools'); await page.reload(); await ready(page); await page.waitForSelector('.table--rows tbody tr');
+
+  // the pool screen
+  await page.locator('.table--rows tbody tr', { hasText: 'Sona Masuri' }).first().click();
+  await page.waitForURL(/\/manager\/pool\.html\?id=/); await ready(page); await page.waitForSelector('.ledger tbody tr');
+  const poolUrl = page.url();
+  tally(await review(page, stem('manager-pool'), vp, { allowManyPrimary: true, shots: { cards: '.grid.cols-3', photos: '.grid--unequal', ledgers: '.ledgers' } }));
+  const ptext = await page.textContent('main');
+  check(/Basavaraj Hiremath/.test(ptext) && /Sale total/.test(ptext) && /Paid to /.test(ptext) && /Deposit/.test(ptext), 'farmers, deposits, sale total and payouts are shown to the Manager');
+  check(await page.locator('.photo').count() >= 3, 'photo slots: two photos and the add slot');
+
+  // change price: a decimal is refused, whole rupees are saved, the change appears as a different row
+  await page.click('button:has-text("Change price")');
+  await page.waitForSelector('.modal #new-price');
+  await page.fill('#new-price', '2500.50');
+  await page.click('.modal button.btn--primary');
+  await page.waitForSelector('#new-price-error:not([hidden])');
+  check(/whole rupees/.test(await page.textContent('#new-price-error')), 'a decimal price is refused in plain words');
+  tally(await review(page, stem('manager-change-price'), vp, { allowManyPrimary: true, skipGrey: true, shots: { modal: '.modal' } }));
+  await page.fill('#new-price', '2,600');
+  await page.click('.modal button.btn--primary');
+  await page.waitForSelector('.modal', { state: 'detached' });
+  await until(() => page.textContent('main'), (v) => v.includes('₹2,600.00'), 'the new price on the screen');
+  await until(() => page.locator('.ledger__change').count(), (c) => c >= 1, 'the price change row in the stock ledger');
+  check(/Price changed ₹2,500 to ₹2,600/.test(await page.textContent('.ledgers')), 'the price change is shown as a different row');
+  await data.managerApi.patch(`/pools/${data.pools.paddy}`, { price_paise_per_kg: 2500 });   // put it back for the other roles
+
+  // verify integrity
+  await page.click('button:has-text("Verify integrity")');
+  await page.waitForSelector('text=/All \\d+ records match/');
+  tally(await review(page, stem('manager-verified'), vp, { allowManyPrimary: true, skipGrey: true, shots: { cards: '.grid.cols-3' } }));
+
+  // close and reopen on its own pool
+  const temp = await data.make({ commodity: 'Maize', variety: `Close ${vp.label} ${Date.now() % 1000}`, range: 1, packaging: '50 kg HDPE bags', storage: 'Hubballi APMC yard', min: 100000, price: 2000 }, [[210, 170, 90]], [[0, 500000]]);
+  await page.goto(`${base}/manager/pool.html?id=${temp}`); await ready(page); await page.waitForSelector('button:has-text("Close pool")');
+  await page.click('button:has-text("Close pool")'); await page.waitForSelector('.modal');
+  tally(await review(page, stem('manager-close'), vp, { allowManyPrimary: true, skipGrey: true, shots: { modal: '.modal' } }));
+  await page.click('.modal button.btn--primary'); await page.waitForSelector('button:has-text("Reopen pool")');
+  check(/Closed/.test(await page.textContent('main')), 'the pool shows Closed');
+  await page.click('button:has-text("Reopen pool")'); await page.click('.modal button.btn--primary'); await page.waitForSelector('button:has-text("Close pool")');
+
+  // photos through the real file input: a good one, a wrong type, one that is too large
+  const draftPool = data.pools.tur;
+  await page.goto(`${base}/manager/pool.html?id=${draftPool}`); await ready(page); await page.waitForSelector('#photo-input', { state: 'attached' });
+  await page.setInputFiles('#photo-input', { name: 'notes.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') });
+  await page.waitForSelector('.notice--bad:not([hidden])');
+  check(/Only JPEG and PNG/.test(await page.textContent('main')), 'a PDF is refused in plain words');
+  await page.setInputFiles('#photo-input', { name: 'big.png', mimeType: 'image/png', buffer: Buffer.alloc(6 * 1024 * 1024, 1) });
+  await page.waitForFunction ? null : null;
+  await until(() => page.textContent('main'), (v) => /too large/.test(v), 'the too-large message');
+  await page.setInputFiles('#photo-input', { name: 'lot.png', mimeType: 'image/png', buffer: png(400, 300, [200, 160, 60], 99) });
+  await until(() => page.locator('.photo img').count(), (c) => c >= 1, 'the uploaded photo (a real browser upload)');
+  check(!/needs a photo/.test(await page.textContent('main')), 'after a photo the draft no longer needs one');
+  tally(await review(page, stem('manager-photo-uploaded'), vp, { allowManyPrimary: true, skipGrey: true, shots: { photos: '.grid--unequal' } }));
+
+  // live: a buyer buys, the stock and the ledgers change by themselves, the new rows are highlighted
+  await page.goto(`${base}/manager/pool.html?id=${data.pools.groundnut}`); await ready(page); await page.waitForSelector('.ledger tbody tr');
+  const buyerApi = new Api(base); await buyerApi.login(data.buyers[0].username, PASS);
+  const stockBefore = await page.locator('.key-number--xl').textContent();
+  await buyerApi.post(`/pools/${data.pools.groundnut}/sales`, { request_id: randomUUID(), quantity_g: 200000, confirmed_price_paise_per_kg: 6783 });
+  await until(() => page.locator('.key-number--xl').textContent(), (v) => v !== stockBefore, 'the live stock change');
+  await until(() => page.locator('.ledger tr.is-new').count(), (c) => c >= 3, 'new ledger rows (stock, ownership, money)');
+  check(/Sale total/.test(await page.textContent('.ledgers')), 'the money ledger gained the sale total live');
+  tally(await review(page, stem('manager-live-rows'), vp, { allowManyPrimary: true, skipGrey: true, shots: { ledgers: '.ledgers' } }));
+
+  // create pool, end to end
+  await page.goto(`${base}/manager/create.html`); await ready(page); await page.waitForSelector('#variety');
+  tally(await review(page, stem('manager-create'), vp, { allowManyPrimary: true, shots: { form: '.detail-grid' } }));
+  check(await page.locator('button:has-text("Open for sale")').isDisabled(), 'Open for sale waits for a photo');
+  await page.selectOption('#commodity', { label: 'Maize' });
+  await page.fill('#variety', `Hybrid ${vp.label} ${Date.now() % 1000}`);
+  await page.click('.toggle__opt:has-text("Range 2")');
+  await page.fill('#price', '2,090.50'); await page.fill('#min-order', '2'); await page.fill('#packaging', '50 kg HDPE bags'); await page.fill('#storage', 'Hubballi APMC yard');
+  await page.click('button:has-text("Save as draft")');
+  await page.waitForSelector('#price-error:not([hidden])');
+  check(/whole rupees/.test(await page.textContent('#price-error')), 'create pool refuses a decimal price');
+  tally(await review(page, stem('manager-create-errors'), vp, { allowManyPrimary: true, skipGrey: true }));
+  await page.fill('#price', '2,090');
+  await page.setInputFiles('#photo-pick', { name: 'lot.png', mimeType: 'image/png', buffer: png(400, 300, [214, 178, 80], 7) });
+  await until(() => page.locator('button:has-text("Open for sale")').isEnabled(), (v) => v === true, 'Open for sale after the first photo');
+  check(await page.locator('#variety').isDisabled(), 'the saved draft fields are locked');
+  tally(await review(page, stem('manager-create-photo'), vp, { allowManyPrimary: true, skipGrey: true, shots: { form: '.detail-grid' } }));
+  await page.click('button:has-text("Open for sale")');
+  await page.waitForURL(/\/manager\/pool\.html\?id=/); await ready(page); await page.waitForSelector('.tag--ok');
+  check(/Open/.test(await page.textContent('main')), 'the new pool is open');
+
+  // the three forms
+  await page.goto(`${base}/manager/accounts.html`); await ready(page); await page.waitForSelector('#form-deposit');
+  tally(await review(page, stem('manager-accounts'), vp, { allowManyPrimary: true, shots: { forms: '.grid--forms' } }));
+  await page.selectOption('#dep-pool', { index: 0 });
+  await page.fill('#dep-qty', '2');
+  await page.waitForSelector('#dep-stock strong');
+  check((await page.textContent('#dep-stock')).includes('Pool stock') && (await page.locator('#dep-stock .icon').count()) === 1, 'the after-saving preview shows stock before and after');
+  await page.click('button:has-text("Save deposit")');
+  await page.waitForSelector('#form-deposit .notice--bad:not([hidden])');
+  check(/Tick the box/.test(await page.textContent('#form-deposit')), 'a deposit needs the tested confirmation');
+  await page.check('#dep-tested'); await page.click('button:has-text("Save deposit")');
+  await page.waitForSelector('#form-deposit .notice--grey:not([hidden])');
+  check(/Deposit saved/.test(await page.textContent('#form-deposit')), 'the deposit is saved');
+  await page.fill('#dep-qty', '0'); await page.check('#dep-tested'); await page.click('button:has-text("Save deposit")');
+  await page.waitForSelector('#dep-qty-error:not([hidden])');
+
+  const user = `new.buyer${vp.label}.${data.unique}`;
+  await page.fill('#acc-name', 'Gangadhar Patil'); await page.fill('#acc-user', 'Bad Name'); await page.click('button:has-text("Create account")');
+  await page.waitForSelector('#acc-user-error:not([hidden])');
+  await page.fill('#acc-user', user); await page.click('.toggle__opt:has-text("Buyer")'); await page.click('button:has-text("Create account")');
+  await page.waitForSelector('#form-account .notice--grey:not([hidden])');
+  await page.waitForSelector('#accounts :text("Gangadhar Patil")');   // the page has redrawn with the new account
+  check(/Account created for Gangadhar Patil/.test(await page.textContent('#form-account')) && /Waiting for first login/.test(await page.textContent('#accounts')), 'the account is created and waits for first login');
+  page.allowedStatuses = [409];   // the duplicate username is an expected refusal
+  await page.fill('#acc-name', 'Someone Else'); await page.fill('#acc-user', user); await page.click('button:has-text("Create account")');
+  await page.waitForSelector('#form-account .notice--bad:not([hidden])');
+  check(/already taken/.test(await page.textContent('#form-account')), 'a duplicate username is refused in plain words');
+  tally(await review(page, stem('manager-accounts-done'), vp, { allowManyPrimary: true, skipGrey: true, shots: { accounts: '#form-account' } }));
+  page.allowedStatuses = [];
+
+  await page.selectOption('#sale-pool', await page.locator('#sale-pool option', { hasText: 'JL-24' }).getAttribute('value'));
+  await page.fill('#sale-qty', '1');
+  await page.waitForSelector('#sale-total');
+  await page.click('button:has-text("Review and confirm")');
+  await page.waitForSelector('.modal');
+  await page.click('.modal button.btn--primary');
+  await page.waitForSelector('.modal :text("Purchase complete")');
+  check(/Paid out|Taken from share/.test(await page.textContent('.modal')) || (await page.locator('.modal table').count()) === 1, 'the Manager sees the split between farmers on the receipt');
+  tally(await review(page, stem('manager-sale-receipt'), vp, { allowManyPrimary: true, skipGrey: true, shots: { modal: '.modal' } }));
+  await page.click('.modal button:has-text("Close")');
+
+  // farmer statement for any farmer; a pool the farmer has no share in says so
+  await page.goto(`${base}/manager/statement.html?farmer=${data.farmers[0].id}&pool=${data.pools.paddy}`); await ready(page); await page.waitForSelector('.tile');
+  tally(await review(page, stem('manager-statement'), vp, { shots: { tiles: '.grid.cols-4' } }));
+  page.allowedStatuses = [404];   // a farmer with no share is an expected 404
+  await page.selectOption('#st-farmer', String(data.farmers[2].id));
+  await page.selectOption('#st-pool', String(data.pools.paddy));
+  await page.waitForSelector('.state');
+  check(/no share in that pool/.test(await page.textContent('main')), 'a farmer with no share in the pool gets a plain sentence');
+  tally(await review(page, stem('manager-statement-empty'), vp, { skipGrey: true }));
+  page.allowedStatuses = [];
+  await context.close();
+}
+
+const scenarios = { login, buyer, farmer, manager };
 try {
   const data = await seed(base, env);
   for (const [name, fn] of Object.entries(scenarios)) {

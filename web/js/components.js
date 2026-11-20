@@ -52,7 +52,7 @@ export function field({ id, label, input, hint = null }) {
   el.id = id;
   el.classList.add(el.tagName === 'SELECT' ? 'select' : 'input');
   const hintEl = hint ? h('p', { class: 'field__hint', id: `${id}-hint` }, hint) : null;
-  const root = h('div', { class: 'field' }, h('label', { class: 'field__label', for: id }, label), el, hintEl, err);
+  const root = h('div', { class: 'field' }, h('label', { class: 'field__label', for: id }, label), el.tagName === 'SELECT' ? selectWrap(el) : el, hintEl, err);   // a select gets its chevron
   el.setAttribute('aria-describedby', [hint ? `${id}-hint` : '', `${id}-error`].filter(Boolean).join(' '));
   return {
     root, input: el, hintEl,

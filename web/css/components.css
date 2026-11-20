@@ -93,6 +93,8 @@
 .toggle__opt[aria-pressed="true"] { background: var(--leaf); color: var(--paper); }
 .toggle__opt:focus-visible { outline: 2px solid var(--leaf); outline-offset: -4px; }
 .toggle__opt:disabled { color: var(--muted); background: var(--grey-tint); cursor: not-allowed; }
+.toggle__opt[aria-pressed="true"]:disabled { color: var(--grey-text); background: var(--grey-edge); }   /* a locked choice still shows which one was chosen */
+.field > .toggle { align-self: flex-start; }
 @media (max-width: 719px) { .toggle__opt { min-height: var(--tap); } .toggle__opt::after { inset: 0; } }
 
 /* ---- status tags: words and an icon do the work, never colour alone ------------------------------------------------ */

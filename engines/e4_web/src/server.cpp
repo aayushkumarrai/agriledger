@@ -465,7 +465,7 @@ struct Server::Impl {
         r.set_header("X-Frame-Options", "DENY");
         r.set_header("Referrer-Policy", "same-origin");
         r.set_header("Content-Security-Policy",
-                     "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
+                     "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; "
                      "connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
         r.set_header("Cache-Control", rel.extension() == ".woff2" ? "public, max-age=31536000, immutable" : "no-cache");
         return r;

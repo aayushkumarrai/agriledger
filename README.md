@@ -44,6 +44,32 @@ Settings (environment): `AGRILEDGER_DB` (set by the script from `.env`), `AGRILE
 `AGRILEDGER_PHOTO_DIR`, `AGRILEDGER_COOKIE_SECURE=1` when served over HTTPS. Crow and Asio are fetched by CMake at pinned releases
 (a system `libasio-dev` is used if present).
 
+## Demo data and logins
+```bash
+scripts/seed_demo.sh     # once, on a fresh database (docker compose down -v first if you already created accounts)
+scripts/run_server.sh    # then open http://localhost:8080
+```
+The seed goes through the real server, so every ledger row, hash and receipt is genuine. Pool numbers start at 12.
+Every demo password is `Demo-pass-2026`.
+
+| Role | Username | Name |
+|---|---|---|
+| Pool Manager | `manager` | Kavita Desai |
+| Farmer A | `farmer.a` | Basavaraj Hiremath |
+| Farmer B | `farmer.b` | Renukamma Patil |
+| Farmer C | `farmer.c` | Mallikarjun Kulkarni |
+| Buyer 1 | `buyer.1` | Mahantesh Traders |
+| Buyer 2 | `buyer.2` | Gangadhar Agro Mart |
+
+Pools: P-12 paddy, Sona Masuri, Range 1, ₹2,500 per quintal, 600 + 800 + 600 kg, open; P-13 groundnut, open; P-14 maize, sold out.
+Evaluators: follow `DEMO_SCRIPT.md`. On an Android phone on the same Wi-Fi, start the server with `AGRILEDGER_BIND=0.0.0.0` and open `http://<your PC's address>:8080`.
+
+## Browser tests
+```bash
+scripts/screens_test.sh all   # every screen at 1200 px and 390 px, four states each, plus the audits
+scripts/e2e_test.sh           # the end-to-end story: create pool, two-buyer race, price change, double tap, tamper
+```
+
 Concurrency demonstration (protected path against the harness-only unprotected counter): `scripts/demo_concurrency.sh`.
 
 ## Frontend

@@ -20,7 +20,12 @@ const ALL_PAGES = [
 ];
 const wanted = (process.env.PAGES || '').split(',').filter(Boolean);
 const PAGES = ALL_PAGES.filter((p) => existsSync(join(ROOT, 'web', p.path)) && (!wanted.length || wanted.includes(p.name)));
-const VIEWPORTS = [{ label: '1200', width: 1200, height: 900 }, { label: '390', width: 390, height: 844 }];
+// Desktop first, then an Android phone: Chromium is the same engine as Chrome on Android, with touch and a phone user agent.
+const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
+const VIEWPORTS = [
+  { label: '1200', width: 1200, height: 900 },
+  { label: '390', width: 390, height: 844, phone: { isMobile: true, hasTouch: true, userAgent: ANDROID_UA } },
+];
 
 function startServer() {
   return new Promise((resolve, reject) => {
@@ -51,7 +56,7 @@ const report = [];
 try {
   for (const pg of PAGES) {
     for (const vp of VIEWPORTS) {
-      const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 1, locale: 'en-IN', timezoneId: 'Asia/Kolkata' });
+      const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: 1, locale: 'en-IN', timezoneId: 'Asia/Kolkata', ...(vp.phone || {}) });
       const page = await context.newPage();
       const problems = [];
       page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') problems.push({ check: 'console', detail: m.text() }); });

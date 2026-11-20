@@ -62,6 +62,12 @@ release that still supports Node 18. The audits check spacing against the 4/8/12
 contrast, tap targets, number alignment, fonts, photo aspect ratios, icon stroke width, shadows and gradients; they also save
 greyscale and blurred ("squint") screenshots.
 
+## Supported browsers
+Desktop Chrome, Edge and Firefox, and Chrome on Android, are the targets; the browser checks run Chromium (the Android Chrome
+engine) at 1200 px and as a 390 px touch phone. iPhone Safari is expected to work but is not a priority: nothing is tuned for it
+yet, and any iPhone-only fix (for example 16 px inputs to stop focus-zoom, or naming the host for WebSockets in the
+Content-Security-Policy on Safari before 15.4) is added only when it is needed. Phone layouts start below 720 px.
+
 ## Layout
 See spec §2. Engines: `engines/e1_audit` (allocation and hashing), `e2_sale` (SQL transactions), `e3_queue` (per-pool queue),
 `e4_web` (server). Frontend in `web/`. Tests in `tests/` and `db/tests/`.

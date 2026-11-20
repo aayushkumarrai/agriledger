@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { WEB } from './helpers.mjs';
 import {
-  toBigInt, formatQuantityInput, groupIndian, formatPaise, formatPricePerQuintal, formatPricePerKg, formatQuantity, totalPaise, formatPermille,
+  toBigInt, formatQuantityInput, formatPricePerQuintalWhole, groupIndian, formatPaise, formatPricePerQuintal, formatPricePerKg, formatQuantity, totalPaise, formatPermille,
   parseQuantity, parsePricePerQuintal, formatDateTime, formatDate, getUnit, setUnit, MAX_GRAMS,
 } from '../../web/js/format.js';
 
@@ -38,6 +38,11 @@ test('prices: paise per kg shown per quintal and per kg', () => {
   assert.equal(formatPricePerKg(2500), '₹25.00');
   assert.equal(formatPricePerQuintal(2441), '₹2,441.00');   // the paddy MSP, 244,100 paise per quintal
   assert.equal(formatPaise(244100), '₹2,441.00');
+});
+
+test('whole-rupee prices for cards', () => {
+  assert.equal(formatPricePerQuintalWhole(2500), '₹2,500');
+  assert.equal(formatPricePerQuintalWhole(125000), '₹1,25,000');
 });
 
 test('quantity: quintal with up to 2 decimals, kg with up to 3, trailing zeros trimmed to one decimal', () => {

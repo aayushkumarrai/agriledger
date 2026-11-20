@@ -103,6 +103,7 @@ export async function seed(base, env) {
     if (open && photoColours.length) await m.patch(`/pools/${poolId}`, { status: 'open' });
     return poolId;
   };
+  out.make = make;
   out.pools.paddy = await make({ commodity: 'Paddy', variety: 'Sona Masuri', range: 1, packaging: '50 kg jute bags', storage: 'Navalgund godown, Dharwad', min: 100000, price: 2500 }, [[196, 160, 78], [176, 142, 70]], [[0, 600000], [1, 800000], [0, 600000]]);
   out.pools.groundnut = await make({ commodity: 'Groundnut with pods', variety: 'JL-24', range: 2, packaging: '40 kg gunny bags', storage: 'Annigeri godown, Dharwad', min: 100000, price: 6783 }, [[184, 132, 84]], [[0, 1000000], [1, 1500000], [2, 1750000]]);
   out.pools.maize = await make({ commodity: 'Maize', variety: 'Pioneer 30V92', range: 1, packaging: '50 kg HDPE bags', storage: 'Hubballi APMC yard', min: 200000, price: 2090 }, [[214, 178, 80]], [[1, 500000]]);

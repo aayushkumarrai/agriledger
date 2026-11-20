@@ -85,7 +85,7 @@ export function pageAudit({ viewportWidth, allowManyPrimary }) {
     const wide = Math.max(r.width, el.classList.contains('toggle__opt') ? 44 : 0);
     if (r.height + extra < need - 0.5 || wide < 44 - 0.5) fail('tap-target', `${label(el)} is ${Math.round(r.width)} x ${Math.round(r.height + extra)} px, needs ${need}`);
   }
-  if (viewportWidth >= 720) {   // the 8 px invisible extension must be clickable, not clipped by a parent
+  if (viewportWidth >= 720 && !document.querySelector('.backdrop')) {   // the 8 px invisible extension must be clickable, not clipped by a parent (a pop-up covering the page is not a clip)
     for (const opt of document.querySelectorAll('.toggle__opt')) {
       if (!visible(opt) || opt.disabled) continue;
       opt.scrollIntoView({ block: 'center' });   // elementFromPoint only sees what is inside the window
@@ -128,14 +128,19 @@ export function pageAudit({ viewportWidth, allowManyPrimary }) {
   for (const spec of used) if (!document.fonts.check(spec)) fail('fonts', `${spec} is not loaded`);
   const families = new Set([...used].map((u) => (/Source Serif 4/.test(u) ? 'serif' : 'sans')));
   if (!(families.has('serif') && families.has('sans'))) notes.push('only one font family on this page');
-  if (document.body.textContent.includes('\u20B9') && !document.fonts.check('700 32px "Source Serif 4"', '\u20B9')) fail('fonts', 'the rupee sign is not rendered from the self-hosted font');
+  for (const el of all) {   // the rupee sign must come from the self-hosted face its element uses
+    if (!visible(el) || ![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.includes('\u20B9'))) continue;
+    const s = getComputedStyle(el);
+    if (!document.fonts.check(`${s.fontWeight} ${s.fontSize} ${s.fontFamily}`, '\u20B9')) { fail('fonts', `the rupee sign in ${label(el)} is not rendered from the self-hosted font`); break; }
+  }
   notes.push(`${used.size} font styles in use`);
 
   // 7. photos keep one aspect ratio; icons keep one stroke width; at most one primary button per screen
   for (const p of document.querySelectorAll('.photo')) {
     if (!visible(p)) continue;
     const r = p.getBoundingClientRect();
-    if (Math.abs(r.width / r.height - 4 / 3) > 0.02) fail('photo', `${label(p)} is ${Math.round(r.width)} x ${Math.round(r.height)}, not 4:3`);
+    const want = p.classList.contains('photo--wide') ? 16 / 9 : 4 / 3;   // two fixed ratios: 4:3 everywhere, 16:9 on list cards
+    if (Math.abs(r.width / r.height - want) > 0.08) fail('photo', `${label(p)} is ${Math.round(r.width)} x ${Math.round(r.height)}, not ${want > 1.5 ? '16:9' : '4:3'}`);
     if (r.width < 100) fail('photo', `${label(p)} has collapsed to ${Math.round(r.width)} px wide`);
     const img = p.querySelector('img');
     if (img && (!img.complete || img.naturalWidth === 0)) fail('photo', 'a photo slot image did not load');

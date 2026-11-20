@@ -173,7 +173,7 @@ json Engine::commodities() {
     }
     for (const auto& r : rt.tx.exec(
              "SELECT commodity_id, parameter_name, unit, range1_max::text AS r1, range2_max::text AS r2, range3_max::text AS r3, "
-             "verified, source, source_date::text AS source_date FROM commodity_parameter ORDER BY commodity_id, parameter_name"))
+             "verified, source, source_date::text AS source_date FROM commodity_parameter ORDER BY commodity_id, ctid"))   // limits in the order they were entered (Moisture first), as the wireframes show them
         out[at.at(r["commodity_id"].as<i64>())]["parameters"].push_back(
             {{"name", r["parameter_name"].as<std::string>()}, {"unit", r["unit"].as<std::string>()},
              {"range1_max", opt_str(r["r1"])}, {"range2_max", opt_str(r["r2"])}, {"range3_max", opt_str(r["r3"])},
@@ -252,7 +252,7 @@ json Engine::pool_detail(i64 pool_id, const Viewer& v) {
     bool all_verified = true;
     for (const auto& p : rt.tx.exec_params(
              "SELECT parameter_name, unit, CASE $2::int WHEN 1 THEN range1_max WHEN 2 THEN range2_max ELSE range3_max END::text AS lim, verified "
-             "FROM commodity_parameter WHERE commodity_id = $1 ORDER BY parameter_name", commodity_id, j["range_no"].get<int>())) {
+             "FROM commodity_parameter WHERE commodity_id = $1 ORDER BY ctid", commodity_id, j["range_no"].get<int>())) {
         if (p["lim"].is_null()) continue;
         limits.push_back({{"name", p["parameter_name"].as<std::string>()}, {"unit", p["unit"].as<std::string>()}, {"max", p["lim"].as<std::string>()}});
         all_verified = all_verified && p["verified"].as<bool>();

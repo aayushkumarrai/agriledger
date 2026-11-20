@@ -15,3 +15,55 @@
 .is-changed { animation: fade-in 0.3s ease-out; }
 .has-modal { overflow: hidden; }
 .breadcrumb { font-size: var(--fs-small); color: var(--muted); }
+
+/* ---- shared screen parts -------------------------------------------------------------------------------------------- */
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s6); flex-wrap: wrap; margin-bottom: var(--s6); }
+.page-head__tools { display: flex; align-items: center; gap: var(--s4); flex-wrap: wrap; }
+.tool-select { min-width: 200px; }
+.fig__value { font-family: var(--font-head); font-weight: 700; font-size: var(--fs-key); line-height: 1.1; }
+.fig--right { text-align: right; }
+.facts { display: grid; grid-template-columns: minmax(110px, 40%) 1fr; margin: 0; }
+.facts dt, .facts dd { margin: 0; padding: var(--s3) 0; border-bottom: 1px solid var(--rule); }
+.facts dt { color: var(--muted); }
+.facts dt:last-of-type, .facts dd:last-of-type { border-bottom: 0; }
+.total-box { background: var(--grey-tint); border-radius: var(--radius); padding: var(--s4); display: flex; flex-direction: column; gap: var(--s1); }
+.total-box__value { font-size: var(--fs-key); }
+.limits-note { margin-top: var(--s2); }
+.nowrap { white-space: nowrap; }
+
+/* ---- buyer: pool cards and the pool screen ------------------------------------------------------------------------ */
+.pool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s6); align-items: stretch; }
+.pool-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.pool-card .photo { border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; }
+.pool-card__body { flex: 1; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); }
+.pool-card__content { flex: 1; display: flex; flex-direction: column; gap: var(--s3); }
+.pool-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); }
+.pool-card__head .tag { flex: none; }
+.stack > .page-head { margin-bottom: 0; }
+.pool-card__title { font-size: var(--fs-section); line-height: 1.25; }
+.pool-card--grey .pool-card__title, .pool-card--grey .fig__value { color: var(--muted); }
+.pool-card--grey .photo img { opacity: 0.5; }
+.photo--wide { aspect-ratio: 16 / 9; }
+a.btn.is-disabled { pointer-events: none; }
+.detail-grid { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: var(--s6); align-items: start; }
+.gallery { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: auto auto; gap: var(--s3); }
+.gallery__main { grid-row: 1 / span 2; aspect-ratio: auto; height: 100%; min-height: 240px; }
+.gallery .photo { width: 100%; }
+@media (max-width: 1023px) { .pool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 719px) {
+  .card--key .fig--right { text-align: left; }
+  .pool-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+  .detail-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+  .gallery { grid-template-columns: 1fr 1fr; }
+  .gallery__main { grid-column: 1 / span 2; grid-row: auto; aspect-ratio: 4 / 3; height: auto; min-height: 0; }
+}
+
+/* ---- tables on a phone: each row becomes a small card with its labels ------------------------------------------------ */
+@media (max-width: 719px) {
+  .table--stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .table--stack, .table--stack tbody, .table--stack tr { display: block; }
+  .table--stack tr { padding: var(--s3) 0; border-bottom: 1px solid var(--rule); }
+  .table--stack tbody tr:last-child { border-bottom: 0; }
+  .table--stack td { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4); padding: var(--s1) 0; border: 0; text-align: right; }
+  .table--stack td::before { content: attr(data-label); flex: none; color: var(--muted); font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; text-align: left; }
+}

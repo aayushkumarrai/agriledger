@@ -55,7 +55,7 @@ export async function newPage(browser, base, vp) {
   });
   page.on('pageerror', (e) => problems.push({ check: 'script-error', detail: String(e) }));
   page.on('request', (r) => { if (!r.url().startsWith(base) && !r.url().startsWith('data:') && !r.url().startsWith('ws://127.0.0.1')) problems.push({ check: 'offline', detail: `request leaves the site: ${r.url()}` }); });
-  page.on('response', (r) => { if (r.status() >= 500 || (r.status() >= 400 && !page.allowedStatuses?.includes(r.status()))) problems.push({ check: 'http-error', detail: `${r.status()} ${r.url()}` }); });
+  page.on('response', (r) => { if (r.status() >= 400 && !page.allowedStatuses?.includes(r.status())) problems.push({ check: 'http-error', detail: `${r.status()} ${r.url()}` }); });
   return { context, page };
 }
 

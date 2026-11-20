@@ -51,6 +51,11 @@ export function formatPricePerQuintal(paisePerKg) {
   return formatPaise(toBigInt(paisePerKg) * 100n);
 }
 
+// A price per quintal in whole rupees, as on the pool cards: 2500 -> "₹2,500". Prices are always whole rupees per quintal.
+export function formatPricePerQuintalWhole(paisePerKg) {
+  return `${RUPEE}${groupIndian(toBigInt(paisePerKg).toString())}`;
+}
+
 // The same price per kg: 2500 -> "₹25.00".
 export function formatPricePerKg(paisePerKg) {
   return formatPaise(paisePerKg);

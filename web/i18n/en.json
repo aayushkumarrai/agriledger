@@ -1,0 +1,247 @@
+{
+  "app": {
+    "name": "AgriLedger"
+  },
+  "unit": {
+    "kg": "kg",
+    "quintal": "quintal",
+    "per_kg": "per kg",
+    "per_quintal": "per quintal",
+    "show_in": "Show in",
+    "toggle_label": "Unit"
+  },
+  "status": {
+    "reconciled": "Reconciled",
+    "open": "Open",
+    "draft": "Draft",
+    "draft_needs_photo": "Draft · needs a photo",
+    "out_of_stock": "Out of stock",
+    "closed": "Closed",
+    "mismatch": "Totals do not match",
+    "active": "Active",
+    "waiting": "Waiting for first login",
+    "no_records": "No records yet"
+  },
+  "common": {
+    "loading": "Loading…",
+    "working": "Working…",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "go_back": "Go back",
+    "confirm": "Confirm purchase",
+    "save": "Save and continue",
+    "log_out": "Log out",
+    "add_photo": "Add photo",
+    "none": "–",
+    "optional": "Optional"
+  },
+  "live": {
+    "connecting": "Connecting…",
+    "live": "Live updates on",
+    "reconnecting": "Reconnecting. Showing the last known figures."
+  },
+  "table": {
+    "farmer": "Farmer",
+    "share": "Share",
+    "left_quintal": "Quintal left",
+    "left_kg": "Kg left",
+    "paid_out": "Paid out",
+    "empty": "Nothing to show yet.",
+    "error": "These figures could not be loaded."
+  },
+  "input": {
+    "quantity_empty": "Enter a quantity.",
+    "quantity_invalid": "Enter a number, for example 5 or 5.5.",
+    "quantity_zero": "The quantity must be more than zero.",
+    "quantity_too_precise_kg": "Use at most 3 decimals for kilograms.",
+    "quantity_too_precise_quintal": "Use at most 5 decimals for quintal.",
+    "quantity_too_large": "That quantity is too large.",
+    "price_empty": "Enter a price.",
+    "price_invalid": "Enter the price as a number, for example 2,500.",
+    "price_decimals": "Enter the price in whole rupees per quintal.",
+    "price_zero": "The price must be more than zero.",
+    "price_too_large": "That price is too large."
+  },
+  "error": {
+    "session_ended": "Your session has ended. Please log in again.",
+    "generic": "Something went wrong. Please try again.",
+    "forbidden": "You are not allowed to do that.",
+    "not_found": "We could not find that."
+  },
+  "reason": {
+    "OUT_OF_STOCK": {
+      "title": "This pool is out of stock.",
+      "body": "Another buyer purchased the last of it. Nothing was charged to you."
+    },
+    "INSUFFICIENT_STOCK": {
+      "title": "Only {stock} is available right now.",
+      "body": "Another buyer purchased some of it while you were deciding. You can buy what is left.",
+      "action": "Buy remaining {stock}"
+    },
+    "PRICE_CHANGED": {
+      "title": "The price has changed.",
+      "body": "From {old} to {new} per quintal. Your total is now {total} for {quantity}.",
+      "note": "Nothing was bought. Please review and confirm again.",
+      "action": "Review and confirm again"
+    },
+    "BELOW_MIN_ORDER": {
+      "title": "The minimum order for this pool is {min}.",
+      "body": ""
+    },
+    "POOL_NOT_OPEN": {
+      "title": "This pool is not open for sale.",
+      "body": ""
+    },
+    "BUSY": {
+      "title": "Many buyers are ordering right now.",
+      "body": "Please try again in a moment. Nothing was bought.",
+      "action": "Try again"
+    }
+  },
+  "styleguide": {
+    "title": "AgriLedger style sample",
+    "eyebrow": "Team 05 · Theme 04 · Draft for team review",
+    "note_1": "All amounts and names on these boards are sample data for layout only.",
+    "note_2": "Quintal is the default unit; kg is one tap away.",
+    "swatch": {
+      "paper": {
+        "name": "Paper",
+        "use": "Page background, like unbleached cotton"
+      },
+      "card": {
+        "name": "Card",
+        "use": "Panels and tables"
+      },
+      "rule": {
+        "name": "Rule",
+        "use": "Thin ledger lines"
+      },
+      "ink": {
+        "name": "Soil ink",
+        "use": "All text, heavy rules"
+      },
+      "muted": {
+        "name": "Muted",
+        "use": "Labels, help text"
+      },
+      "leaf": {
+        "name": "Leaf green",
+        "use": "The one accent"
+      },
+      "clay": {
+        "name": "Clay red",
+        "use": "Errors and mismatch only"
+      }
+    },
+    "type": {
+      "label": "Type",
+      "pool_title": "Paddy · Sona Masuri · Range 1",
+      "body": "Noto Sans for everything you read and fill in. Source Serif 4 for headings and the AgriLedger name. A Noto Sans Kannada file can be added later without changing the design.",
+      "sold": "· {quantity} sold",
+      "figures": "Numbers use tabular figures, so columns line up like a ledger book."
+    },
+    "controls": {
+      "label": "Buttons, fields, unit toggle",
+      "quantity_quintal": "Quantity (quintal)",
+      "quantity_kg": "Quantity (kg)",
+      "total": "Total"
+    },
+    "status": {
+      "label": "Status: one colour family, words do the work",
+      "note": "Green means healthy. Grey means waiting or finished. Red appears only when something is wrong, and always with an icon and words."
+    },
+    "sample_farmer_a": "Farmer A",
+    "sample_farmer_b": "Farmer B",
+    "sample_farmer_c": "Farmer C",
+    "photo": {
+      "slot": "Photo of the lot",
+      "note": "Photo slots are hatched boxes on these wireframes. Real lot photos replace them; the Pool Manager uploads 1 to 3 per pool."
+    }
+  },
+  "states": {
+    "title": "Control states",
+    "eyebrow": "Every control, every state",
+    "intro": "Hover, focus, pressed, disabled, loading, empty and error, shown side by side with realistic sample data.",
+    "state": {
+      "default": "Default",
+      "hover": "Hover",
+      "focus": "Focus",
+      "pressed": "Pressed",
+      "disabled": "Disabled",
+      "loading": "Loading",
+      "error": "Error",
+      "checked": "Checked",
+      "unchecked": "Unchecked"
+    },
+    "buttons": {
+      "label": "Buttons",
+      "primary": "Review order",
+      "secondary": "Change price",
+      "disabled": "Open for sale",
+      "loading": "Confirming…"
+    },
+    "fields": {
+      "label": "Fields",
+      "quantity": "Quantity to buy (quintal)",
+      "price": "Price per quintal (₹)",
+      "location": "Stored at",
+      "commodity": "Commodity",
+      "hint_quantity": "Minimum order 1.0 quintal · at most 15.0 quintal",
+      "hint_price": "Whole rupees per quintal.",
+      "error_quantity": "The minimum order for this pool is 1.0 quintal.",
+      "value_location": "Navalgund godown, Dharwad",
+      "option_paddy": "Paddy",
+      "option_maize": "Maize",
+      "option_tur": "Tur dal",
+      "option_groundnut": "Groundnut with pods"
+    },
+    "controls": {
+      "label": "Unit toggle and checkbox",
+      "tested": "I tested this lot and it meets the Range 1 limits for this pool."
+    },
+    "tags": {
+      "label": "Status tags"
+    },
+    "nav": {
+      "label": "Navigation",
+      "menu": "Menu",
+      "pools": "Pools",
+      "purchases": "My purchases",
+      "user": "Buyer · Shivappa Naik"
+    },
+    "photos": {
+      "label": "Photo slots",
+      "empty": "Photo of the lot",
+      "add": "Add photo",
+      "uploaded": "Uploaded 17 Nov",
+      "alt": "A heap of groundnut pods in a godown"
+    },
+    "tiles": {
+      "label": "Summary tiles",
+      "deposited": "I deposited",
+      "sold": "Sold from my share",
+      "left": "I still have",
+      "paid": "Paid to me",
+      "share": "30% of the pool"
+    },
+    "screens": {
+      "label": "Loading, empty and error",
+      "loading_label": "Loading",
+      "empty_text": "No purchases yet. When you buy from a pool, the receipt appears here.",
+      "error_text": "These figures could not be loaded.",
+      "browse": "Browse pools"
+    },
+    "popup": {
+      "label": "Pop-up",
+      "title": "Confirm your purchase",
+      "pool": "Pool",
+      "pool_value": "P-13 · Groundnut with pods · JL-24 · Range 2",
+      "quantity": "Quantity",
+      "price": "Price",
+      "total": "Total"
+    },
+    "live": {
+      "label": "Live connection"
+    }
+  }
+}

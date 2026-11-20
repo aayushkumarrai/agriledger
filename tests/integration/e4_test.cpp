@@ -64,6 +64,7 @@ protected:
         c.db_conninfo = app_conninfo();
         c.port = 0;
         c.photo_dir = photo_dir;
+        c.web_dir = AGRI_WEB_DIR;
         c.http_threads = 6;
         c.db_pool_size = 10;
         c.lock_timeout_ms = 300;
@@ -929,4 +930,50 @@ TEST_F(E4Test, LoginIsAlsoThrottledPerAddressAcrossManyUsernames) {
     EXPECT_EQ(r.status, 429) << "credential stuffing with a new username each time is stopped by address";
     EXPECT_TRUE(r.headers.count("retry-after"));
     small.stop();
+}
+
+// ---- static frontend ---------------------------------------------------------------------------------------------
+
+TEST_F(E4Test, StaticFilesAreServedStrictlyAndNothingEscapesTheWebFolder) {
+    // the real files, no login needed, with the right types and a locked-down policy
+    const Response css = anon().get("/css/tokens.css");
+    ASSERT_EQ(css.status, 200);
+    EXPECT_EQ(css.headers.at("content-type"), "text/css; charset=utf-8");
+    EXPECT_EQ(css.headers.at("x-content-type-options"), "nosniff");
+    EXPECT_NE(css.headers.at("content-security-policy").find("default-src 'none'"), std::string::npos);
+    EXPECT_NE(css.headers.at("content-security-policy").find("script-src 'self'"), std::string::npos);
+    EXPECT_EQ(css.headers.at("content-security-policy").find("unsafe-inline"), std::string::npos);
+    EXPECT_EQ(css.headers.at("x-frame-options"), "DENY");
+    EXPECT_NE(css.body.find("--leaf"), std::string::npos);
+    EXPECT_EQ(anon().get("/fonts/source-serif-4-latin-600-normal.woff2").headers.at("content-type"), "font/woff2");
+    EXPECT_EQ(anon().get("/js/format.js").headers.at("content-type"), "text/javascript; charset=utf-8");
+    EXPECT_EQ(anon().get("/i18n/en.json").status, 200);
+    EXPECT_EQ(anon().get("/styleguide.html").headers.at("content-type"), "text/html; charset=utf-8");
+
+    // anything that could leave the web folder or reach hidden or non-web files is a plain 404
+    for (const char* bad : {"/../CLAUDE.md", "/css/../../CLAUDE.md", "/%2e%2e/CLAUDE.md", "/css/%2e%2e/%2e%2e/CLAUDE.md", "/..%2fCLAUDE.md",
+                            "/.git/config", "/css/.hidden", "/.env", "/db/schema.sql", "/CMakeLists.txt", "/css", "/css/", "/js/pages",
+                            "/x.php", "/css/tokens.css%00.png", "/css\\tokens.css", "//etc/passwd", "/fonts/OFL-NotoSans.txt/../../../CLAUDE.md"})
+        EXPECT_EQ(anon().get(bad).status, 404) << bad;
+    EXPECT_EQ(anon().post("/css/tokens.css", json::object()).status, 404);
+    EXPECT_EQ(anon().get("/nope").status, 404);
+    // the API is not reachable through the static handler, and still needs a login
+    EXPECT_EQ(anon().get("/pools").status, 401);
+    EXPECT_EQ(anon().get("/users").status, 401);
+}
+
+TEST_F(E4Test, ManyRequestsOnOneConnectionAllGetTheirOwnAnswer) {
+    // a browser loads a page's files down one connection; a catch-all handler that ended its response twice once made every
+    // second request on a connection come back as a plain 404
+    const std::vector<std::string> paths = {"/css/tokens.css", "/css/base.css", "/nope", "/css/components.css", "/js/format.js", "/pools",
+                                            "/i18n/en.json", "/js/ui.js", "/pools", "/css/fonts.css"};
+    const auto responses = testhttp::request_many(port(), paths);
+    ASSERT_EQ(responses.size(), paths.size());
+    const int expected[] = {200, 200, 404, 200, 200, 401, 200, 200, 401, 200};
+    for (std::size_t i = 0; i < paths.size(); ++i) {
+        EXPECT_EQ(responses[i].status, expected[i]) << paths[i];
+        if (expected[i] == 200) { EXPECT_FALSE(responses[i].body.empty()) << paths[i]; }
+    }
+    EXPECT_NE(responses[3].body.find(".btn"), std::string::npos) << "the right body came back for the right request";
+    EXPECT_NE(responses[4].body.find("formatPaise"), std::string::npos);
 }

@@ -16,6 +16,7 @@ target_link_libraries(integration_tests PRIVATE e2_sale GTest::gtest_main)
 # E4 over HTTP and WebSocket: role matrix, every sale reason, photos, views, integrity check, live feed
 add_executable(server_tests integration/e4_test.cpp)
 target_link_libraries(server_tests PRIVATE e4_web GTest::gtest_main)
+target_compile_definitions(server_tests PRIVATE AGRI_WEB_DIR="${CMAKE_SOURCE_DIR}/web")
 gtest_discover_tests(server_tests PROPERTIES TIMEOUT 600)
 gtest_discover_tests(integration_tests PROPERTIES TIMEOUT 300)
 

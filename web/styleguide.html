@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="styleguide.title"></title>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <script type="module" src="/js/pages/styleguide.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="sg-header">
+      <div class="stack stack--tight">
+        <p class="label" data-i18n="styleguide.eyebrow"></p>
+        <h1 data-i18n="styleguide.title"></h1>
+      </div>
+      <div class="sg-header__notes">
+        <p data-i18n="styleguide.note_1"></p>
+        <p data-i18n="styleguide.note_2"></p>
+      </div>
+    </header>
+
+    <div class="stack stack--xl">
+    <section class="grid cols-7">
+      <div class="swatch swatch--paper"><div class="swatch__color"></div><div class="swatch__body">
+        <p class="swatch__name" data-i18n="styleguide.swatch.paper.name"></p><p class="swatch__hex" data-token="--paper"></p><p class="swatch__use" data-i18n="styleguide.swatch.paper.use"></p></div></div>
+      <div class="swatch swatch--card"><div class="swatch__color"></div><div class="swatch__body">
+        <p class="swatch__name" data-i18n="styleguide.swatch.card.name"></p><p class="swatch__hex" data-token="--card"></p><p class="swatch__use" data-i18n="styleguide.swatch.card.use"></p></div></div>
+      <div class="swatch swatch--rule"><div class="swatch__color"></div><div class="swatch__body">
+        <p class="swatch__name" data-i18n="styleguide.swatch.rule.name"></p><p class="swatch__hex" data-token="--rule"></p><p class="swatch__use" data-i18n="styleguide.swatch.rule.use"></p></div></div>
+      <div class="swatch swatch--ink"><div class="swatch__color"></div><div class="swatch__body">
+        <p class="swatch__name" data-i18n="styleguide.swatch.ink.name"></p><p class="swatch__hex" data-token="--ink"></p><p class="swatch__use" data-i18n="styleguide.swatch.ink.use"></p></div></div>
+      <div class="swatch swatch--muted"><div class="swatch__color"></div><div class="swatch__body">
+        <p class="swatch__name" data-i18n="styleguide.swatch.muted.name"></p><p class="swatch__hex" data-token="--muted"></p><p class="swatch__use" data-i18n="styleguide.swatch.muted.use"></p></div></div>
+      <div class="swatch swatch--leaf"><div class="swatch__color"></div><div class="swatch__body">
+        <p class="swatch__name" data-i18n="styleguide.swatch.leaf.name"></p><p class="swatch__hex" data-token="--leaf"></p><p class="swatch__use" data-i18n="styleguide.swatch.leaf.use"></p></div></div>
+      <div class="swatch swatch--clay"><div class="swatch__color"></div><div class="swatch__body">
+        <p class="swatch__name" data-i18n="styleguide.swatch.clay.name"></p><p class="swatch__hex" data-token="--clay"></p><p class="swatch__use" data-i18n="styleguide.swatch.clay.use"></p></div></div>
+    </section>
+
+    <div class="grid cols-2">
+      <div class="stack stack--loose">
+        <section class="card stack">
+          <p class="label" data-i18n="styleguide.type.label"></p>
+          <h2 data-i18n="styleguide.type.pool_title"></h2>
+          <p data-i18n="styleguide.type.body"></p>
+          <p class="row">
+            <span class="key-number" data-fmt="money" data-value="1250000"></span>
+            <span class="muted" data-fmt="sold" data-value="500000"></span>
+          </p>
+          <p class="small muted" data-i18n="styleguide.type.figures"></p>
+        </section>
+
+        <section class="card stack">
+          <p class="label" data-i18n="styleguide.controls.label"></p>
+          <div class="row">
+            <button class="btn btn--primary" type="button" data-i18n="common.confirm"></button>
+            <button class="btn btn--secondary" type="button" data-i18n="common.cancel"></button>
+            <div class="toggle" role="group" data-unit-toggle data-i18n-attr="aria-label:unit.toggle_label">
+              <button class="toggle__opt" type="button" data-unit="kg" aria-pressed="false" data-i18n="unit.kg"></button>
+              <button class="toggle__opt" type="button" data-unit="quintal" aria-pressed="true" data-i18n="unit.quintal"></button>
+            </div>
+          </div>
+          <div class="grid cols-2">
+            <div class="field">
+              <label class="field__label" for="sg-qty" data-i18n-unit="styleguide.controls.quantity"></label>
+              <input class="input" id="sg-qty" type="text" inputmode="decimal" autocomplete="off" aria-describedby="sg-qty-error">
+            </div>
+            <div class="field">
+              <label class="field__label" for="sg-total" data-i18n="styleguide.controls.total"></label>
+              <input class="input" id="sg-total" type="text" readonly>
+            </div>
+          </div>
+          <p class="field__error" id="sg-qty-error" hidden role="alert">
+            <svg class="icon" aria-hidden="true"><use href="#i-cross"/></svg><span id="sg-qty-error-text"></span>
+          </p>
+        </section>
+      </div>
+
+      <div class="stack stack--loose">
+        <section class="card stack">
+          <p class="label" data-i18n="styleguide.status.label"></p>
+          <div class="row">
+            <span class="tag tag--ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="status.reconciled"></span></span>
+            <span class="tag tag--ok"><span data-i18n="status.open"></span></span>
+            <span class="tag tag--grey"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span data-i18n="status.draft"></span></span>
+            <span class="tag tag--grey"><span data-i18n="status.out_of_stock"></span></span>
+            <span class="tag tag--bad"><svg class="icon" aria-hidden="true"><use href="#i-cross"/></svg><span data-i18n="status.mismatch"></span></span>
+          </div>
+          <p class="small muted" data-i18n="styleguide.status.note"></p>
+        </section>
+
+        <section class="card card--table">
+          <table class="table">
+            <thead>
+              <tr>
+                <th data-i18n="table.farmer"></th>
+                <th class="num" data-i18n="table.share"></th>
+                <th class="num" data-i18n-unit="table.left"></th>
+                <th class="num" data-i18n="table.paid_out"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="nowrap" data-i18n="styleguide.sample_farmer_a"></td><td class="num" data-fmt="permille" data-value="300"></td><td class="num" data-fmt="quantity" data-value="450000"></td><td class="num" data-fmt="money" data-value="375000"></td></tr>
+              <tr><td class="nowrap" data-i18n="styleguide.sample_farmer_b"></td><td class="num" data-fmt="permille" data-value="400"></td><td class="num" data-fmt="quantity" data-value="600000"></td><td class="num" data-fmt="money" data-value="500000"></td></tr>
+              <tr><td class="nowrap" data-i18n="styleguide.sample_farmer_c"></td><td class="num" data-fmt="permille" data-value="300"></td><td class="num" data-fmt="quantity" data-value="450000"></td><td class="num" data-fmt="money" data-value="375000"></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <div class="row row--top row--nowrap">
+          <div class="photo photo--empty photo--thumb"><span data-i18n="styleguide.photo.slot"></span></div>
+          <p class="small muted grow" data-i18n="styleguide.photo.note"></p>
+        </div>
+      </div>
+    </div>
+    </div>
+  </main>
+</body>
+</html>

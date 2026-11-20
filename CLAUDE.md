@@ -18,7 +18,9 @@ Read `docs/IMPLEMENTATION_SPEC.md` first. It wins over the Master Document where
 - Names in the README and credits use the spellings in the Master Document.
 
 ## Design rules (frontend)
-- Follow `docs/wireframes/*.png` and spec §8. Do not add elements, hues, gradients, shadows or emoji.
+- Follow `docs/wireframes/*.png` and spec §8. Do not add elements, hues, gradients or emoji. Hairline 1 px borders, no shadows, except **one soft shadow on pop-ups only** (decided 20 Nov; it supersedes the earlier "no shadows").
+- Visual bar: refined and restrained, never bold or trendy. Self-hosted fonts only. One inline line-icon set with a single stroke width (`web/js/icons.js`). Photo slots have a fixed aspect ratio. Every control has hover, focus, pressed, disabled and (where it applies) loading states; every screen has empty and error states.
+- After each screen: screenshot at 1200 px and 390 px, then run the squint test, the greyscale test, the spacing audit against the scale and the number-alignment check (`npm run test:browser`); fix what they find and list the fixes in the report.
 - Tokens only (`web/css/tokens.css`): paper #F4EEDF, card #FBF7EC, rule #D8CDB4, ink #2C2418, muted #6B5D45, **leaf green #3B5B2E is the one accent**, clay red #9C3F2A for errors/mismatch only. Fonts: Source Serif 4 (headings), Noto Sans (body), self-hosted.
 - Spacing from the scale 4/8/12/16/20/24/32 only. Tap targets ≥ 44 px. Visible focus ring. Tabular numerals, numbers right-aligned in tables.
 - One primary button per screen. Priority order: act first (price, stock, quantity, total, button), proof second, history last.

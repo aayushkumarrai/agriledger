@@ -2,7 +2,11 @@
 
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
+#include <map>
 
 #include "e1/hashing.hpp"
 #include "e3/e2_adapter.hpp"
@@ -372,6 +376,13 @@ struct Server::Impl {
             });
         });
 
+        // Everything else: the static frontend (or a plain 404)
+        CROW_CATCHALL_ROUTE(app)([this](const crow::request& req, crow::response& res) {
+            // Crow calls res.end() itself after a catch-all handler; ending it here too would complete the response twice
+            // and desynchronise a keep-alive connection (every second request on it came back as a plain 404).
+            try { res = serve_static(req); } catch (...) { res = map_current_exception(); }
+        });
+
         // Live feed -------------------------------------------------------------------------------------------------
         CROW_WEBSOCKET_ROUTE(app, "/live")
             .onaccept([this](const crow::request& req, void** userdata) {
@@ -400,6 +411,55 @@ struct Server::Impl {
                 c.userdata(nullptr);
             })
             .onmessage([](crow::websocket::connection&, const std::string&, bool) { /* clients send nothing */ });
+    }
+
+    // ---- static frontend -----------------------------------------------------------------------------------------
+
+    // Serves web_dir. Only plain file names made of letters, digits, dot, dash and underscore, no hidden files, and only
+    // known file types; anything else, or anything that resolves outside web_dir, is a plain 404. No API data is ever
+    // served from here, and a strict Content-Security-Policy keeps pages to their own scripts, styles and fonts.
+    crow::response serve_static(const crow::request& req) {
+        namespace fs = std::filesystem;
+        if (req.method != crow::HTTPMethod::Get) return error_response(404, "NOT_FOUND");
+        std::string url = req.url == "/" ? "/index.html" : req.url;
+        if (url.size() > 200 || url[0] != '/') return error_response(404, "NOT_FOUND");
+        for (char c : url) if (c == '%' || c == '\\' || c == ':' || c == '\0') return error_response(404, "NOT_FOUND");
+        fs::path rel;
+        std::size_t pos = 1;
+        while (pos <= url.size()) {
+            std::size_t end = url.find('/', pos);
+            if (end == std::string::npos) end = url.size();
+            const std::string part = url.substr(pos, end - pos);
+            const bool plain = !part.empty() && part[0] != '.' &&
+                               std::all_of(part.begin(), part.end(), [](unsigned char c) { return std::isalnum(c) || c == '.' || c == '-' || c == '_'; });
+            if (!plain) return error_response(404, "NOT_FOUND");
+            rel /= part;
+            pos = end + 1;
+        }
+        static const std::map<std::string, std::string> types = {
+            {".html", "text/html; charset=utf-8"}, {".css", "text/css; charset=utf-8"}, {".js", "text/javascript; charset=utf-8"},
+            {".json", "application/json; charset=utf-8"}, {".woff2", "font/woff2"}, {".svg", "image/svg+xml"},
+            {".png", "image/png"}, {".ico", "image/x-icon"}, {".txt", "text/plain; charset=utf-8"}};
+        const auto type = types.find(rel.extension().string());
+        if (type == types.end()) return error_response(404, "NOT_FOUND");
+        std::error_code ec;
+        const fs::path base = fs::weakly_canonical(cfg.web_dir, ec);
+        const fs::path full = fs::weakly_canonical(base / rel, ec);
+        if (ec || full.string().compare(0, base.string().size() + 1, base.string() + "/") != 0 || !fs::is_regular_file(full, ec))
+            return error_response(404, "NOT_FOUND");   // also catches a symlink that points outside web_dir
+        std::ifstream in(full, std::ios::binary);
+        if (!in) return error_response(404, "NOT_FOUND");
+        crow::response r(200);
+        r.body.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+        r.set_header("Content-Type", type->second);
+        r.set_header("X-Content-Type-Options", "nosniff");
+        r.set_header("X-Frame-Options", "DENY");
+        r.set_header("Referrer-Policy", "same-origin");
+        r.set_header("Content-Security-Policy",
+                     "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
+                     "connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
+        r.set_header("Cache-Control", rel.extension() == ".woff2" ? "public, max-age=31536000, immutable" : "no-cache");
+        return r;
     }
 
     // ---- handlers with more than a few lines ---------------------------------------------------------------------

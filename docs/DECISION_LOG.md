@@ -87,3 +87,8 @@ See spec §6 (full table with request/response shapes).
 13. Manager-placed sales go through E3 like buyer sales.
 14. README and credits use the Master Document's spellings of names.
 15. Crow pinned with CMake FetchContent; `libasio-dev` preferred (apt). Playwright is installed at Stage 6.
+
+## M. Visual quality bar (20 Nov 2026) [FINAL]
+- Refined and restrained, not bold or trendy; follow the wireframes and tokens exactly. Self-hosted fonts, one inline line-icon set (single stroke width, no emoji), hairline borders instead of shadows (one soft shadow only on pop-ups; this overrides the earlier "no shadows" rule and the wireframe pop-up look), photo slots with a fixed aspect ratio, realistic demo data.
+- States for every control: hover, focus, pressed, disabled, loading, empty, error.
+- Per screen: screenshots at 1200 px and 390 px, squint test, greyscale test, spacing audit against the 4/8/12/16/20/24/32 scale, number alignment; fix before moving on and list the fixes.

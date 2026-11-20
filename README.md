@@ -46,6 +46,22 @@ Settings (environment): `AGRILEDGER_DB` (set by the script from `.env`), `AGRILE
 
 Concurrency demonstration (protected path against the harness-only unprotected counter): `scripts/demo_concurrency.sh`.
 
+## Frontend
+Plain HTML, CSS and JavaScript in `web/`, served by the C++ server (no build step, no CDN: the fonts are self-hosted).
+Two pages exist so far: `/styleguide.html` (the style board from `docs/wireframes/Main.png`) and `/styleguide-states.html`
+(every control in every state). All visible text comes from `web/i18n/en.json`.
+```bash
+npm install                       # once: Playwright is a test-only dependency
+npx playwright install chromium   # once: the browser used by the checks
+scripts/test.sh js                # unit tests for format.js (exact BigInt maths), i18n.js, api.js, live.js
+scripts/browser_test.sh           # screenshots at 1200 and 390 px plus the audits; output in tests/browser/out/
+```
+The browser checks need two small system libraries (`libnss3`, `libnspr4`); if they are not installed,
+`scripts/setup_browser_libs.sh` unpacks them locally without root. Playwright is pinned to 1.49.1 because it is the newest
+release that still supports Node 18. The audits check spacing against the 4/8/12/16/20/24/32 scale, colours against the tokens,
+contrast, tap targets, number alignment, fonts, photo aspect ratios, icon stroke width, shadows and gradients; they also save
+greyscale and blurred ("squint") screenshots.
+
 ## Layout
 See spec §2. Engines: `engines/e1_audit` (allocation and hashing), `e2_sale` (SQL transactions), `e3_queue` (per-pool queue),
 `e4_web` (server). Frontend in `web/`. Tests in `tests/` and `db/tests/`.

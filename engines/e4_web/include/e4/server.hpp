@@ -16,6 +16,7 @@ struct Config {
     std::string bind_address = "127.0.0.1";
     std::uint16_t port = 8080;                    // 0 = pick a free port (tests); read it back with Server::port()
     std::string photo_dir = "data/photos";        // uploaded lot photos (git-ignored)
+    std::string web_dir = "web";                  // the static frontend (HTML, CSS, JS, fonts), served without a login
     int http_threads = 8;
     std::size_t db_pool_size = 8;
     int lock_timeout_ms = 3000;

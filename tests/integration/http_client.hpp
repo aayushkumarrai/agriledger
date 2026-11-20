@@ -100,6 +100,39 @@ inline Response request(std::uint16_t port, const std::string& method, const std
     return parse_response(raw);
 }
 
+// Several GET requests down ONE connection (keep-alive), the way a browser loads a page. Responses are read by Content-Length.
+inline std::vector<Response> request_many(std::uint16_t port, const std::vector<std::string>& paths, const std::string& cookie = "") {
+    std::vector<Response> out;
+    const int fd = connect_local(port);
+    if (fd < 0) return out;
+    std::string pending;
+    for (const std::string& path : paths) {
+        std::string req = "GET " + path + " HTTP/1.1\r\nHost: 127.0.0.1:" + std::to_string(port) + "\r\nConnection: keep-alive\r\n";
+        if (!cookie.empty()) req += "Cookie: " + cookie + "\r\n";
+        send_all(fd, req + "\r\n");
+        std::size_t split;
+        while ((split = pending.find("\r\n\r\n")) == std::string::npos) {
+            char buf[8192];
+            const ssize_t n = ::recv(fd, buf, sizeof buf, 0);
+            if (n <= 0) { ::close(fd); return out; }
+            pending.append(buf, static_cast<std::size_t>(n));
+        }
+        Response head = parse_response(pending.substr(0, split + 4));
+        const std::size_t length = head.headers.count("content-length") ? std::stoul(head.headers["content-length"]) : 0;
+        while (pending.size() < split + 4 + length) {
+            char buf[8192];
+            const ssize_t n = ::recv(fd, buf, sizeof buf, 0);
+            if (n <= 0) { ::close(fd); return out; }
+            pending.append(buf, static_cast<std::size_t>(n));
+        }
+        head.body = pending.substr(split + 4, length);
+        pending.erase(0, split + 4 + length);
+        out.push_back(std::move(head));
+    }
+    ::close(fd);
+    return out;
+}
+
 // A logged-in (or anonymous) HTTP client: remembers the session cookie.
 class Client {
 public:

@@ -1,0 +1,13 @@
+{
+  "name": "agriledger-web-tests",
+  "private": true,
+  "type": "module",
+  "description": "Frontend unit tests (node:test) and browser checks (Playwright). The shipped frontend itself has no build step and no dependencies.",
+  "scripts": {
+    "test": "node --test tests/js/",
+    "test:browser": "node tests/browser/run.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.49.1"
+  }
+}

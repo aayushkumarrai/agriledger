@@ -306,7 +306,7 @@ Contrast checked (WCAG ratios): ink on paper 13.2, muted on paper 5.5, leaf on p
 
 ### 8.2 Rules
 
-1. **One accent.** Leaf green marks the primary action, the active nav item and "open/ok". Clay red appears only for errors and mismatches. Everything else is ink, muted brown or paper. No other hues, gradients, shadows, glass or emoji.
+1. **One accent.** Leaf green marks the primary action, the active nav item and "open/ok". Clay red appears only for errors and mismatches. Everything else is ink, muted brown or paper. No other hues, gradients, glass or emoji, and no shadows except one soft shadow on pop-ups (decided 20 Nov).
 2. **Colour never carries meaning alone.** Every status tag has text, and an icon for good/bad (tick, cross, clock).
 3. **Type scale:** page title 32 px serif; section title 20–22 px serif; body 15 px; small 13 px; label 12 px uppercase, letter-spacing .06 em; key numbers 26–36 px serif. All numbers use `font-variant-numeric: tabular-nums`; numbers in tables are right-aligned.
 4. **Spacing** only from the scale above; page padding 32 px (16 px on phone); cards padding 16–24 px; 1 px `--rule` borders; one **2 px ink border** marks the single most important box on a screen (the price-and-buy box).
@@ -317,6 +317,7 @@ Contrast checked (WCAG ratios): ink on paper 13.2, muted on paper 5.5, leaf on p
 9. Responsive: desktop first (1200 px design width); below 720 px layouts collapse to one column. The **Pool Manager photo upload** and the farmer and buyer screens must be fully usable on a phone (`<input type="file" accept="image/*" capture="environment">`).
 10. Words: UI says **farmer** (tables: seller), **deposit** (tables: contribution), **Range 1–3** (never "grade"), **pool**. All text in `web/i18n/en.json`, referenced by key; no literal strings in JS or HTML.
 11. Never label payouts "simulated" on screen.
+12. **Quality bar (20 Nov):** refined and restrained. One inline line-icon set with a single stroke width, no emoji. Hairline borders instead of shadows (only pop-ups get one soft shadow). Photo slots keep a fixed aspect ratio. Every control has hover, focus, pressed, disabled and, where relevant, loading states; every screen has empty and error states. Each screen is checked at 1200 px and 390 px with a squint test, a greyscale test, a spacing audit against the scale, and a number-alignment check.
 
 ### 8.3 Screens and reading order (all wireframed)
 

@@ -1,12 +1,12 @@
 #!/bin/bash
 # One command for every test that exists so far. Starts the database container if needed.
-# Usage: scripts/test.sh [db|cpp|all]   (default: all)
+# Usage: scripts/test.sh [db|cpp|js|browser|all]   (default: all; browser runs only if npm packages are installed)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [ -f .env ] || { echo "Missing .env: copy .env.example to .env first"; exit 1; }
 set -a; . <(tr -d '\r' < .env); set +a      # tolerate Windows line endings
 what="${1:-all}"
-case "$what" in db|cpp|all) ;; *) echo "Usage: scripts/test.sh [db|cpp|all]" >&2; exit 2 ;; esac
+case "$what" in db|cpp|js|browser|all) ;; *) echo "Usage: scripts/test.sh [db|cpp|js|browser|all]" >&2; exit 2 ;; esac
 
 if [ "$what" = db ] || [ "$what" = all ]; then
   docker compose up -d --wait db >/dev/null
@@ -25,4 +25,11 @@ if [ "$what" = cpp ] || [ "$what" = all ]; then
   AGRI_TEST_CONNINFO="$base user=$APP_DB_USER password=$APP_DB_PASSWORD" \
   AGRI_TEST_SUPER_CONNINFO="$base user=postgres password=$POSTGRES_PASSWORD" \
   ctest --test-dir build --output-on-failure
+fi
+if [ "$what" = js ] || [ "$what" = all ]; then
+  [ -d node_modules ] || npm install --no-audit --no-fund >/dev/null
+  node --test tests/js/
+fi
+if [ "$what" = browser ] || { [ "$what" = all ] && [ -d node_modules/playwright ] && [ -d "$HOME/.cache/ms-playwright" ]; }; then
+  scripts/browser_test.sh
 fi

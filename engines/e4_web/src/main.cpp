@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
     }
     cfg.bind_address = env("AGRILEDGER_BIND", "127.0.0.1");
     cfg.photo_dir = env("AGRILEDGER_PHOTO_DIR", "data/photos");
+    cfg.web_dir = env("AGRILEDGER_WEB_DIR", "web");
     cfg.cookie_secure = env("AGRILEDGER_COOKIE_SECURE") == "1";
 
     try {

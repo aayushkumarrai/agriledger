@@ -8,3 +8,5 @@ build/
 node_modules/
 # Windows download markers
 *:Zone.Identifier
+tests/browser/.libs/
+tests/browser/out/

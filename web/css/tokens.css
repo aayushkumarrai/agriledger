@@ -1,0 +1,31 @@
+/* Design tokens (spec §8.1). The only place colours, type sizes and the spacing scale are defined. */
+:root {
+  --paper: #F4EEDF;  --card: #FBF7EC;  --rule: #D8CDB4;  --field: #FFFDF6;  --field-border: #BFB293;
+  --ink: #2C2418;    --muted: #6B5D45;
+  --leaf: #3B5B2E;   --leaf-tint: #E3E9D6;  --leaf-text: #2F4A24;  --leaf-edge: #B9C79F;   /* the ONE accent */
+  --clay: #9C3F2A;   --clay-tint: #F1DDD3;  --clay-text: #8A3623;  --clay-edge: #DDB3A4;   /* errors and mismatches only */
+  --grey-tint: #ECE5D2; --grey-text: #5C4F38; --grey-edge: #CFC4A8;                        /* pending, closed, out of stock */
+
+  --font-head: 'Source Serif 4', Georgia, serif;
+  --font-body: 'Noto Sans', system-ui, sans-serif;
+  --radius: 4px;  --radius-sm: 3px;
+
+  /* spacing scale: nothing else is used for margin, padding or gap */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px;
+
+  /* type scale (spec §8.2 rule 3) */
+  --fs-title: 32px;  --fs-section: 22px;  --fs-body: 15px;  --fs-small: 13px;  --fs-label: 12px;  --fs-key: 32px;
+  --fs-h3: 18px;  --fs-brand: 24px;  --fs-title-phone: 28px;   /* additions: small headings, the wordmark, the page title on a phone */
+
+  /* touch size (spec §8.2 rule 5) */
+  --tap: 44px;
+
+  /* Added 20 Nov 2026 with the visual quality bar: the single soft shadow, used on pop-ups only, and the dimming behind a
+     pop-up. Both are made from the ink colour, so no new hue appears. */
+  --popup-shadow: 0 8px 24px rgba(44, 36, 24, 0.14);
+  --backdrop: rgba(44, 36, 24, 0.40);
+}
+
+@media (max-width: 719px) {
+  :root { --tap: 48px; }   /* spec: 48 px buttons on a phone */
+}

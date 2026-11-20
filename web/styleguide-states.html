@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="states.title"></title>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <script type="module" src="/js/pages/styleguide-states.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="sg-header">
+      <div class="stack stack--tight">
+        <p class="label" data-i18n="states.eyebrow"></p>
+        <h1 data-i18n="states.title"></h1>
+      </div>
+      <div class="sg-header__notes"><p data-i18n="states.intro"></p></div>
+    </header>
+
+    <div class="stack stack--xl">
+
+      <section class="card stack">
+        <p class="label" data-i18n="states.buttons.label"></p>
+        <div class="grid cols-6">
+          <div class="sg-state"><p class="label" data-i18n="states.state.default"></p><button class="btn btn--primary" type="button" data-demo data-i18n="states.buttons.primary"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.hover"></p><button class="btn btn--primary is-hover" type="button" data-demo data-i18n="states.buttons.primary"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.focus"></p><button class="btn btn--primary is-focus" type="button" data-demo data-i18n="states.buttons.primary"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.pressed"></p><button class="btn btn--primary is-pressed" type="button" data-demo data-i18n="states.buttons.primary"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.disabled"></p><button class="btn btn--primary" type="button" disabled data-demo data-i18n="states.buttons.disabled"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.loading"></p>
+            <button class="btn btn--primary" type="button" aria-busy="true" data-demo><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span data-i18n="states.buttons.loading"></span></button></div>
+        </div>
+        <div class="grid cols-6">
+          <div class="sg-state"><p class="label" data-i18n="states.state.default"></p><button class="btn btn--secondary" type="button" data-demo data-i18n="states.buttons.secondary"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.hover"></p><button class="btn btn--secondary is-hover" type="button" data-demo data-i18n="states.buttons.secondary"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.focus"></p><button class="btn btn--secondary is-focus" type="button" data-demo data-i18n="states.buttons.secondary"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.pressed"></p><button class="btn btn--secondary is-pressed" type="button" data-demo data-i18n="states.buttons.secondary"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.disabled"></p><button class="btn btn--secondary" type="button" disabled data-demo data-i18n="states.buttons.secondary"></button></div>
+          <div class="sg-state"><p class="label" data-i18n="states.state.loading"></p>
+            <button class="btn btn--secondary" type="button" aria-busy="true" data-demo><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span data-i18n="common.working"></span></button></div>
+        </div>
+      </section>
+
+      <section class="card stack">
+        <p class="label" data-i18n="states.fields.label"></p>
+        <div class="grid grid--auto">
+          <div class="field"><label class="field__label" for="f1" data-i18n="states.fields.quantity"></label><input class="input" id="f1" type="text" value="5.0" aria-describedby="f1h"><p class="field__hint" id="f1h" data-i18n="states.fields.hint_quantity"></p><p class="label" data-i18n="states.state.default"></p></div>
+          <div class="field"><label class="field__label" for="f2" data-i18n="states.fields.quantity"></label><input class="input is-hover" id="f2" type="text" value="5.0" aria-describedby="f2h"><p class="field__hint" id="f2h" data-i18n="states.fields.hint_quantity"></p><p class="label" data-i18n="states.state.hover"></p></div>
+          <div class="field"><label class="field__label" for="f3" data-i18n="states.fields.quantity"></label><input class="input is-focus" id="f3" type="text" value="5.0" aria-describedby="f3h"><p class="field__hint" id="f3h" data-i18n="states.fields.hint_quantity"></p><p class="label" data-i18n="states.state.focus"></p></div>
+          <div class="field"><label class="field__label" for="f4" data-i18n="states.fields.quantity"></label><input class="input" id="f4" type="text" value="0.5" aria-invalid="true" aria-describedby="f4e"><p class="field__error" id="f4e"><svg class="icon" aria-hidden="true"><use href="#i-cross"/></svg><span data-i18n="states.fields.error_quantity"></span></p><p class="label" data-i18n="states.state.error"></p></div>
+          <div class="field"><label class="field__label" for="f5" data-i18n="states.fields.quantity"></label><input class="input" id="f5" type="text" value="5.0" disabled><p class="field__hint" data-i18n="states.fields.hint_quantity"></p><p class="label" data-i18n="states.state.disabled"></p></div>
+        </div>
+        <div class="grid cols-3">
+          <div class="field"><label class="field__label" for="f6" data-i18n="states.fields.price"></label><input class="input" id="f6" type="text" inputmode="numeric" value="6,783" aria-describedby="f6h"><p class="field__hint" id="f6h" data-i18n="states.fields.hint_price"></p></div>
+          <div class="field"><label class="field__label" for="f7" data-i18n="states.fields.location"></label><input class="input" id="f7" type="text" autocomplete="off"></div>
+          <div class="field"><label class="field__label" for="f8" data-i18n="states.fields.commodity"></label>
+            <div class="select-wrap"><select class="select" id="f8"><option data-i18n="states.fields.option_paddy"></option><option data-i18n="states.fields.option_maize"></option><option data-i18n="states.fields.option_tur"></option><option selected data-i18n="states.fields.option_groundnut"></option></select><svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></div></div>
+        </div>
+      </section>
+
+      <div class="grid cols-2">
+        <section class="card stack">
+          <p class="label" data-i18n="states.controls.label"></p>
+          <div class="grid grid--auto">
+            <div class="sg-state"><p class="label" data-i18n="states.state.default"></p>
+              <div class="toggle" role="group" data-unit-toggle data-i18n-attr="aria-label:unit.toggle_label"><button class="toggle__opt" type="button" data-unit="kg" aria-pressed="false" data-i18n="unit.kg"></button><button class="toggle__opt" type="button" data-unit="quintal" aria-pressed="true" data-i18n="unit.quintal"></button></div></div>
+            <div class="sg-state"><p class="label" data-i18n="states.state.hover"></p>
+              <div class="toggle" role="group" data-i18n-attr="aria-label:unit.toggle_label"><button class="toggle__opt is-hover" type="button" aria-pressed="false" data-i18n="unit.kg"></button><button class="toggle__opt" type="button" aria-pressed="true" data-i18n="unit.quintal"></button></div></div>
+            <div class="sg-state"><p class="label" data-i18n="states.state.pressed"></p>
+              <div class="toggle" role="group" data-i18n-attr="aria-label:unit.toggle_label"><button class="toggle__opt is-pressed" type="button" aria-pressed="false" data-i18n="unit.kg"></button><button class="toggle__opt" type="button" aria-pressed="true" data-i18n="unit.quintal"></button></div></div>
+            <div class="sg-state"><p class="label" data-i18n="states.state.disabled"></p>
+              <div class="toggle" role="group" data-i18n-attr="aria-label:unit.toggle_label"><button class="toggle__opt" type="button" disabled aria-pressed="false" data-i18n="unit.kg"></button><button class="toggle__opt" type="button" disabled aria-pressed="true" data-i18n="unit.quintal"></button></div></div>
+          </div>
+          <label class="check"><input class="check__box" type="checkbox" checked><span data-i18n="states.controls.tested"></span></label>
+          <label class="check"><input class="check__box" type="checkbox"><span data-i18n="states.controls.tested"></span></label>
+          <label class="check"><input class="check__box" type="checkbox" disabled><span data-i18n="states.controls.tested"></span></label>
+        </section>
+
+        <section class="card stack">
+          <p class="label" data-i18n="states.tags.label"></p>
+          <div class="row">
+            <span class="tag tag--ok"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="status.reconciled"></span></span>
+            <span class="tag tag--ok"><span data-i18n="status.open"></span></span>
+            <span class="tag tag--ok"><span data-i18n="status.active"></span></span>
+            <span class="tag tag--grey"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span data-i18n="status.draft_needs_photo"></span></span>
+            <span class="tag tag--grey"><span data-i18n="status.out_of_stock"></span></span>
+            <span class="tag tag--grey"><span data-i18n="status.closed"></span></span>
+            <span class="tag tag--grey"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span data-i18n="status.waiting"></span></span>
+            <span class="tag tag--bad"><svg class="icon" aria-hidden="true"><use href="#i-cross"/></svg><span data-i18n="status.mismatch"></span></span>
+          </div>
+          <p class="label" data-i18n="states.live.label"></p>
+          <div class="stack stack--tight">
+            <p class="live-note live-note--live"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span data-i18n="live.live"></span></p>
+            <p class="live-note"><svg class="icon" aria-hidden="true"><use href="#i-clock"/></svg><span data-i18n="live.connecting"></span></p>
+            <p class="live-note"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg><span data-i18n="live.reconnecting"></span></p>
+          </div>
+        </section>
+      </div>
+
+      <section class="card stack">
+        <p class="label" data-i18n="states.nav.label"></p>
+        <div class="topbar">
+          <div class="topbar__inner">
+            <span class="brand" data-i18n="app.name"></span>
+            <nav class="nav">
+              <a href="#pools" aria-current="page" data-i18n="states.nav.pools"></a>
+              <a href="#purchases" class="is-hover" data-i18n="states.nav.purchases"></a>
+            </nav>
+            <button class="topbar__menu" type="button" aria-expanded="false" data-i18n-attr="aria-label:states.nav.menu"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-menu"/></svg></button>
+            <div class="topbar__user"><span data-i18n="states.nav.user"></span><button class="btn btn--secondary" type="button" data-demo data-i18n="common.log_out"></button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card stack">
+        <p class="label" data-i18n="states.photos.label"></p>
+        <div class="grid cols-4">
+          <div class="sg-state"><div class="photo photo--empty"><span data-i18n="states.photos.empty"></span></div><p class="label" data-i18n="states.state.default"></p></div>
+          <div class="sg-state"><button class="photo photo--add" type="button"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-camera"/></svg><span data-i18n="states.photos.add"></span></button><p class="label" data-i18n="states.state.default"></p></div>
+          <div class="sg-state"><button class="photo photo--add is-hover" type="button"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-camera"/></svg><span data-i18n="states.photos.add"></span></button><p class="label" data-i18n="states.state.hover"></p></div>
+          <div class="sg-state"><div class="photo"><img src="/img/sample-lot.svg" width="400" height="300" alt="" data-i18n-attr="alt:states.photos.alt"><span class="photo__caption" data-i18n="states.photos.uploaded"></span></div><p class="label" data-i18n="states.state.default"></p></div>
+        </div>
+      </section>
+
+      <section class="stack">
+        <p class="label" data-i18n="states.tiles.label"></p>
+        <div class="grid cols-4">
+          <div class="tile"><p class="label" data-i18n="states.tiles.deposited"></p><p class="tile__value"><span class="key-number" data-fmt="quantity" data-value="600000"></span><span class="key-unit" data-unit-label></span></p></div>
+          <div class="tile"><p class="label" data-i18n="states.tiles.sold"></p><p class="tile__value"><span class="key-number" data-fmt="quantity" data-value="150000"></span><span class="key-unit" data-unit-label></span></p></div>
+          <div class="tile"><p class="label" data-i18n="states.tiles.left"></p><p class="tile__value"><span class="key-number" data-fmt="quantity" data-value="450000"></span><span class="key-unit" data-unit-label></span></p><p class="small muted" data-i18n="states.tiles.share"></p></div>
+          <div class="tile"><p class="label" data-i18n="states.tiles.paid"></p><p class="tile__value"><span class="key-number" data-fmt="money" data-value="375000"></span></p></div>
+        </div>
+      </section>
+
+      <section class="stack">
+        <p class="label" data-i18n="states.screens.label"></p>
+        <div class="grid cols-3">
+          <div class="card stack" role="status" data-i18n-attr="aria-label:states.screens.loading_label">
+            <span class="skeleton skeleton--short"></span><span class="skeleton skeleton--key"></span><span class="skeleton"></span><span class="skeleton skeleton--mid"></span>
+          </div>
+          <div class="card state">
+            <svg class="icon icon--lg muted" aria-hidden="true"><use href="#i-image"/></svg>
+            <p class="state__text" data-i18n="states.screens.empty_text"></p>
+            <button class="btn btn--secondary" type="button" data-demo data-i18n="states.screens.browse"></button>
+          </div>
+          <div class="card state">
+            <p class="notice notice--bad" role="alert"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><span data-i18n="states.screens.error_text"></span></p>
+            <button class="btn btn--secondary" type="button" data-demo data-i18n="common.retry"></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="stack">
+        <p class="label" data-i18n="states.popup.label"></p>
+        <div class="modal modal--static" role="dialog" aria-labelledby="pop-title">
+          <h2 id="pop-title" data-i18n="states.popup.title"></h2>
+          <div class="modal__rows">
+            <p class="modal__row"><span data-i18n="states.popup.pool"></span><span data-i18n="states.popup.pool_value"></span></p>
+            <p class="modal__row"><span data-i18n="states.popup.quantity"></span><span data-fmt="quantity-unit" data-value="500000"></span></p>
+            <p class="modal__row"><span data-i18n="states.popup.price"></span><span><span data-fmt="price-quintal" data-value="6783"></span> <span data-i18n="unit.per_quintal"></span></span></p>
+            <p class="modal__row"><span data-i18n="states.popup.total"></span><span class="serif" data-fmt="money" data-value="3391500"></span></p>
+          </div>
+          <div class="row">
+            <button class="btn btn--secondary" type="button" data-demo data-i18n="common.go_back"></button>
+            <button class="btn btn--primary" type="button" data-demo data-i18n="common.confirm"></button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</body>
+</html>

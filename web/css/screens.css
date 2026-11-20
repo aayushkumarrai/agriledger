@@ -67,3 +67,20 @@ a.btn.is-disabled { pointer-events: none; }
   .table--stack td { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4); padding: var(--s1) 0; border: 0; text-align: right; }
   .table--stack td::before { content: attr(data-label); flex: none; color: var(--muted); font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; text-align: left; }
 }
+
+/* ---- farmer ---------------------------------------------------------------------------------------------------------- */
+.pool-grid--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pool-card--text .pool-card__body { padding: var(--s6); }
+.figs { gap: var(--s3); }
+.fig__value--muted { color: var(--muted); }
+.feed-label { padding: var(--s4) var(--s2) var(--s2); }
+.activity { display: flex; flex-direction: column; }
+.activity__row { display: grid; grid-template-columns: 9rem 1fr auto; gap: var(--s4); padding: var(--s3) var(--s2); border-top: 1px solid var(--rule); align-items: baseline; }
+.statement-head { padding: var(--s3) var(--s2); }
+@media (max-width: 719px) {
+  .pool-grid--two { grid-template-columns: minmax(0, 1fr); }
+  .pool-card--text .pool-card__body { padding: var(--s4); }
+  .activity__row { grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
+  .activity__row .num { text-align: left; }
+  .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

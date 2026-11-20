@@ -233,7 +233,73 @@ async function buyer(data, vp) {
   await context.close();
 }
 
-const scenarios = { login, buyer };
+// ---- farmer -----------------------------------------------------------------------------------------------------------
+async function farmer(data, vp) {
+  const user = data.farmers[0];   // Basavaraj Hiremath: deposits in the paddy and groundnut pools
+  const { context, page } = await newPage(browser, base, vp);
+  const stem = (n) => `${n}-${vp.label}`;
+  await uiLogin(page, user.username);
+  await page.waitForURL(/\/farmer\/pools\.html/); await ready(page); await page.waitForSelector('.pool-card');
+  tally(await review(page, stem('farmer-pools'), vp, { shots: { card: '.pool-card', activity: '#activity' } }));
+  const text = await page.textContent('main');
+  check(!/Renukamma|Mallikarjun|Mahantesh|Gangadhar/.test(text), 'a farmer sees no other farmer or buyer by name');
+  check(/Latest activity/.test(text) && /Sale from P-/.test(text), 'the latest activity shows the sale');
+  check((await page.locator('.pool-card').count()) >= 2, 'a card for each pool the farmer deposited into');
+
+  // error, loading and empty
+  page.allowedStatuses = [500];
+  await page.route('**/me/pools', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"INTERNAL"}' }));
+  await page.reload(); await ready(page); await page.waitForSelector('.notice--bad');
+  tally(await review(page, stem('farmer-pools-error'), vp, { skipGrey: true }));
+  await page.unroute('**/me/pools'); page.allowedStatuses = [];
+  await page.route('**/me/pools', async (route) => { await sleep(1500); await route.continue(); });
+  await page.reload(); await page.waitForSelector('.skeleton');
+  tally(await review(page, stem('farmer-pools-loading'), vp, { skipGrey: true }));
+  await page.unroute('**/me/pools'); await ready(page);
+
+  const fresh = `fresh.farmer${vp.label}.${data.unique}`;
+  await data.managerApi.post('/users', { name: 'Renukamma Naik', username: fresh, type: 'FARMER', temporary_password: TEMP });
+  const newcomer = await newPage(browser, base, vp);
+  await newcomer.page.goto(`${base}/login.html`);
+  await newcomer.page.fill('#username', fresh); await newcomer.page.fill('#password', TEMP); await newcomer.page.click('button[type=submit]');
+  await newcomer.page.waitForSelector('#new-password');
+  await newcomer.page.fill('#new-password', PASS); await newcomer.page.fill('#repeat-password', PASS); await newcomer.page.click('button[type=submit]');
+  await newcomer.page.waitForURL(/\/farmer\/pools\.html/); await ready(newcomer.page); await newcomer.page.waitForSelector('.state');
+  tally(await review(newcomer.page, stem('farmer-pools-empty'), vp, { skipGrey: true }));
+  await newcomer.context.close();
+
+  // live: the Pool Manager records a deposit for this farmer; the card changes by itself
+  const grain = page.locator('.pool-card', { hasText: 'Sona Masuri' }).locator('.fig', { hasText: 'My grain left' }).locator('.fig__value');
+  const before = await grain.textContent();
+  await data.managerApi.post(`/pools/${data.pools.paddy}/contributions`, { seller_id: user.id, quantity_g: 300000 });
+  const after = await until(() => grain.textContent(), (v) => v !== before, 'the live deposit');
+  check(after !== null && after !== before, `live update changed my grain left from ${before} to ${after}`);
+
+  // the statement
+  await page.locator('.pool-card', { hasText: 'Sona Masuri' }).locator('a.btn').click();
+  await page.waitForURL(/statement\.html\?pool=/); await ready(page); await page.waitForSelector('.tile');
+  tally(await review(page, stem('farmer-statement'), vp, { shots: { tiles: '.grid.cols-4', table: '.card--table' } }));
+  const st = await page.textContent('main');
+  check(/These figures match the pool's records/.test(st) && /I deposited grain/.test(st) && /Sale of /.test(st), 'the statement lists deposits and sales and says the figures match');
+  check(!/Renukamma|Mallikarjun|Mahantesh/.test(st), 'the statement shows only this farmer');
+  const unit0 = await page.locator('.tile .key-number').first().textContent();
+  await page.click('.toggle__opt[data-unit="kg"]');
+  check((await page.locator('.tile .key-number').first().textContent()) !== unit0, 'the unit toggle changes the statement');
+  await page.click('.toggle__opt[data-unit="quintal"]');
+
+  page.allowedStatuses = [500];
+  await page.route('**/farmers/*/statement*', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"INTERNAL"}' }));
+  await page.reload(); await ready(page); await page.waitForSelector('.notice--bad');
+  tally(await review(page, stem('farmer-statement-error'), vp, { skipGrey: true }));
+  await page.unroute('**/farmers/*/statement*'); page.allowedStatuses = [];
+
+  // "My statement" in the menu opens the first pool
+  await page.goto(`${base}/farmer/statement.html`); await ready(page); await page.waitForSelector('.tile');
+  check(await page.locator('.table').count() === 1, 'My statement without a pool opens one');
+  await context.close();
+}
+
+const scenarios = { login, buyer, farmer };
 try {
   const data = await seed(base, env);
   for (const [name, fn] of Object.entries(scenarios)) {

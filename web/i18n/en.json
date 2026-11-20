@@ -382,5 +382,40 @@
       "busy": "Busy",
       "not_done": "Not completed"
     }
+  },
+  "farmer": {
+    "eyebrow": "Farmer home",
+    "pools_title": "My pools",
+    "my_share": "My share",
+    "grain_left": "My grain left",
+    "paid_to_me": "Paid to me",
+    "pool_stock_now": "Pool stock now: {qty}",
+    "nothing_sold": "Nothing sold yet from this pool",
+    "view_statement": "View my statement",
+    "latest": "Latest activity (new rows appear here by themselves)",
+    "activity_sale": "Sale from {code}: {total} sold. You received {paid} for {mine}.",
+    "activity_deposit": "Deposit to {code}: you added {qty}.",
+    "left": "Left: {qty}",
+    "empty": "You have no deposits yet. When the Pool Manager records your first deposit, your pool appears here.",
+    "error": "Your pools could not be loaded."
+  },
+  "statement": {
+    "deposited": "I deposited",
+    "sold": "Sold from my share",
+    "left": "I still have",
+    "paid": "Paid to me",
+    "of_pool": "{share} of the pool",
+    "mine_title": "My statement for this pool",
+    "matches": "These figures match the pool's records",
+    "date": "Date",
+    "what": "What happened",
+    "grain_quintal": "Grain (quintal)",
+    "grain_kg": "Grain (kg)",
+    "have": "I have",
+    "money": "Money to me",
+    "sale_row": "Sale of {sold} from the pool at {price} per quintal; my {share} share",
+    "deposit_row": "I deposited grain",
+    "subtitle": "Price {price} per quintal · Pool stock {stock}",
+    "error": "This statement could not be loaded."
   }
 }

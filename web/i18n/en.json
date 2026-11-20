@@ -243,5 +243,57 @@
     "live": {
       "label": "Live connection"
     }
+  },
+  "pages": {
+    "login": "Log in · AgriLedger",
+    "buyer_pools": "Available pools · AgriLedger",
+    "buyer_pool": "Pool · AgriLedger",
+    "buyer_purchases": "My purchases · AgriLedger",
+    "farmer_pools": "My pools · AgriLedger",
+    "farmer_statement": "My statement · AgriLedger",
+    "manager_pools": "Pools · AgriLedger",
+    "manager_pool": "Pool · AgriLedger",
+    "manager_create": "Create pool · AgriLedger",
+    "manager_accounts": "Accounts · AgriLedger",
+    "manager_statement": "Farmer statement · AgriLedger"
+  },
+  "nav": {
+    "pools": "Pools",
+    "purchases": "My purchases",
+    "my_pools": "My pools",
+    "my_statement": "My statement",
+    "accounts": "Accounts",
+    "menu": "Menu",
+    "main": "Main menu",
+    "breadcrumb": "You are here"
+  },
+  "role": {
+    "buyer": "Buyer",
+    "farmer": "Farmer",
+    "manager": "Pool Manager"
+  },
+  "photo": {
+    "alt": "Photo of the lot",
+    "slot": "Photo of the lot"
+  },
+  "login": {
+    "title": "Log in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Log in",
+    "invalid": "The username or password is incorrect.",
+    "too_many": "Too many attempts. Please wait a few minutes and try again.",
+    "no_signup": "There is no sign-up link. Your Pool Manager creates your account and gives you a first password."
+  },
+  "password": {
+    "title": "Set your own password",
+    "intro": "Your Pool Manager gave you a temporary password. Choose a new one before you continue.",
+    "temporary": "Temporary password",
+    "new": "New password",
+    "repeat": "New password again",
+    "too_short": "Use at least 8 characters.",
+    "mismatch": "The two passwords do not match.",
+    "wrong_temporary": "The temporary password is incorrect.",
+    "same": "Choose a different password."
   }
 }

@@ -1,0 +1,17 @@
+/* Screen layouts (login, buyer, farmer, pool manager). Same rules as components.css: tokens and the spacing scale only. */
+
+/* ---- login ---------------------------------------------------------------------------------------------------------- */
+.auth { min-height: 100vh; }
+.auth-brand { max-width: 1200px; margin: 0 auto; padding: var(--s6) var(--s8); border-bottom: 2px solid var(--ink); }
+.auth-main { display: flex; justify-content: center; padding: var(--s8); }
+.auth-card { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: var(--s5); }
+@media (max-width: 719px) {
+  .auth-brand { padding: var(--s4); }
+  .auth-main { padding: var(--s4); }
+}
+
+/* a number that has just changed fades in over 300 ms; nothing moves */
+@keyframes fade-in { from { opacity: 0.35; } to { opacity: 1; } }
+.is-changed { animation: fade-in 0.3s ease-out; }
+.has-modal { overflow: hidden; }
+.breadcrumb { font-size: var(--fs-small); color: var(--muted); }

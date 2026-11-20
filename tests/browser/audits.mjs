@@ -61,7 +61,7 @@ export function pageAudit({ viewportWidth, allowManyPrimary }) {
   const backgroundOf = (el) => { for (let e = el; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c && c.a > 0.99) return c; } return parse(hexToRgb(tokenStyle.getPropertyValue('--paper'))); };
   const worst = [];
   for (const el of all) {
-    if (!visible(el) || el.disabled || el.getAttribute('aria-disabled') === 'true' || el.classList.contains('is-disabled')) continue;
+    if (!visible(el) || el.closest('[disabled], [aria-disabled="true"], .is-disabled')) continue;
     const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
     if (!own) continue;
     const s = getComputedStyle(el);
@@ -169,6 +169,10 @@ export function pageAudit({ viewportWidth, allowManyPrimary }) {
     }
     if (lines.size > 1) fail('short-text-wraps', `${label(el)} "${text}" breaks across lines`);
   }
+
+  // 8d. a value that was never filled in must not be printed ("null", "undefined", "NaN", "[object Object]")
+  const stray = /(^|[^\w.])(null|undefined|NaN|\[object Object\])([^\w]|$)/.exec(document.body.innerText);
+  if (stray) fail('stray-value', `the page prints "${stray[2]}"`);
 
   // 9. layout: nothing scrolls sideways
   if (root.scrollWidth > viewportWidth + 1) fail('overflow', `page is ${root.scrollWidth} px wide in a ${viewportWidth} px window`);

@@ -33,7 +33,7 @@
   background: var(--rule); border-color: var(--rule); color: var(--muted); cursor: not-allowed; transform: none;
 }
 .btn--secondary:disabled, .btn--secondary[aria-disabled="true"], .btn--secondary.is-disabled { background: transparent; border-color: var(--rule); }
-.btn[aria-busy="true"], .btn.is-loading { cursor: progress; pointer-events: none; }   /* text changes to "Working…", with a clock icon */
+.btn[aria-busy="true"], .btn.is-loading { cursor: progress; pointer-events: none; }   /* keeps its normal look; the text becomes Working… */   /* text changes to "Working…", with a clock icon */
 
 /* ---- fields ------------------------------------------------------------------------------------------------------- */
 .field { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }

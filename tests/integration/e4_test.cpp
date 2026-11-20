@@ -977,3 +977,25 @@ TEST_F(E4Test, ManyRequestsOnOneConnectionAllGetTheirOwnAnswer) {
     EXPECT_NE(responses[3].body.find(".btn"), std::string::npos) << "the right body came back for the right request";
     EXPECT_NE(responses[4].body.find("formatPaise"), std::string::npos);
 }
+
+TEST_F(E4Test, WhoAmIAnswersEveryRoleAndRefusesAnonymous) {
+    build_world();
+    EXPECT_EQ(anon().get("/auth/me").status, 401);
+    const struct { Client* c; const Person* p; const char* role; } cases[] = {{&mgr, &manager, "manager"}, {&farmer_c[0], &farmer[0], "farmer"}, {&buyer_c[0], &buyer[0], "buyer"}};
+    for (const auto& k : cases) {
+        const json me = k.c->get("/auth/me").j();
+        EXPECT_EQ(me["role"], k.role);
+        EXPECT_EQ(me["user_id"], k.p->id);
+        EXPECT_EQ(me["name"], k.p->name);
+        EXPECT_FALSE(me["must_change_password"].get<bool>());
+        EXPECT_FALSE(has_key(me, {"password_hash", "password", "username"}));
+    }
+    // still answers while the temporary password is unchanged (the login screen needs it to show the change-password step)
+    const std::string fresh = unique_name("tmp");
+    server->create_account("Temp Person", fresh, "BUYER", kTemp);
+    Client c = anon();
+    ASSERT_EQ(c.login(fresh, kTemp).status, 200);
+    const Response r = c.get("/auth/me");
+    EXPECT_EQ(r.status, 200);
+    EXPECT_TRUE(r.j()["must_change_password"].get<bool>());
+}

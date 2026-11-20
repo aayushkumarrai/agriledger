@@ -213,6 +213,15 @@ struct Server::Impl {
             }, /*password_change_exempt=*/true);
         });
 
+        // Who is logged in: the page shell calls this first on every screen to pick the right menu and role home.
+        CROW_ROUTE(app, "/auth/me").methods(crow::HTTPMethod::Get)([this](const crow::request& req) {
+            return guarded(req, kAny, [&](const Principal& p) {
+                std::string role = p.s.type;
+                std::transform(role.begin(), role.end(), role.begin(), [](unsigned char c) { return std::tolower(c); });
+                return json_response(200, {{"user_id", p.s.user_id}, {"role", role}, {"name", p.s.name}, {"must_change_password", p.s.must_change_password}});
+            }, /*password_change_exempt=*/true);
+        });
+
         CROW_ROUTE(app, "/auth/change-password").methods(crow::HTTPMethod::Post)([this](const crow::request& req) {
             return guarded(req, kAny, [&](const Principal& p) {
                 const json j = body_object(req);

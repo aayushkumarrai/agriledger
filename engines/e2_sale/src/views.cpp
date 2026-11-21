@@ -60,6 +60,7 @@ json pool_common(const pqxx::row& r) {
     j["min_order_g"] = r["min_order_g"].as<i64>();
     j["packaging"] = opt_str(r["packaging"]);
     j["storage_location"] = r["storage_location"].as<std::string>();
+    j["market"] = opt_str(r["market"]);
     j["status"] = r["status"].as<std::string>();
     j["farmer_count"] = r["farmer_count"].as<i64>();
     j["first_deposit_at"] = opt_str(r["first_deposit"]);
@@ -70,7 +71,7 @@ json pool_common(const pqxx::row& r) {
 
 const char* kPoolSelect =
     "SELECT p.pool_id, p.commodity_id, c.name AS commodity, p.variety, p.range_no, p.price_paise_per_kg, "
-    "p.total_stock_g AS stock_g, p.min_order_g, p.packaging, p.storage_location, p.status, "
+    "p.total_stock_g AS stock_g, p.min_order_g, p.packaging, p.storage_location, p.market, p.status, "
     "(SELECT count(*) FROM pool_seller_balance b WHERE b.pool_id = p.pool_id) AS farmer_count, "
     "(SELECT to_char(min(x.contributed_at) AT TIME ZONE 'UTC','YYYY-MM-DD') FROM contribution x WHERE x.pool_id = p.pool_id) AS first_deposit, "
     "(SELECT to_char(max(x.contributed_at) AT TIME ZONE 'UTC','YYYY-MM-DD') FROM contribution x WHERE x.pool_id = p.pool_id) AS last_deposit, "
@@ -88,10 +89,10 @@ const char* kSoldRecently =
 std::optional<AuthUser> Engine::find_user(const std::string& username) {
     ReadTx rt(*impl_);
     const pqxx::result r = rt.tx.exec_params(
-        "SELECT u.user_id, u.username, u.password_hash, u.user_type, u.is_active, u.must_change_password, "
+        "SELECT u.user_id, u.username, u.password_hash, u.user_type, u.is_active, u.must_change_password, u.public_code, u.approval_status, "
         "coalesce(m.manager_name, s.seller_name, b.buyer_name) AS name "
         "FROM app_user u LEFT JOIN pool_manager m ON m.user_id = u.user_id LEFT JOIN seller s ON s.seller_id = u.user_id "
-        "LEFT JOIN buyer b ON b.buyer_id = u.user_id WHERE u.username = $1", username);
+        "LEFT JOIN buyer b ON b.buyer_id = u.user_id WHERE u.username = $1 OR u.phone = $1 ORDER BY (u.username = $1) DESC LIMIT 1", username);   // a mobile number signs in too
     if (r.empty()) return std::nullopt;
     AuthUser u;
     u.user_id = r[0]["user_id"].as<i64>();
@@ -101,6 +102,8 @@ std::optional<AuthUser> Engine::find_user(const std::string& username) {
     u.name = r[0]["name"].as<std::string>();
     u.is_active = r[0]["is_active"].as<bool>();
     u.must_change_password = r[0]["must_change_password"].as<bool>();
+    u.public_code = r[0]["public_code"].as<std::string>();
+    u.approval = r[0]["approval_status"].as<std::string>();
     return u;
 }
 
@@ -114,7 +117,7 @@ void Engine::create_session(i64 user_id, const std::string& token_hex, int ttl_s
 std::optional<SessionInfo> Engine::find_session(const std::string& token_hex) {
     ReadTx rt(*impl_);
     const pqxx::result r = rt.tx.exec_params(
-        "SELECT u.user_id, u.username, u.user_type, u.must_change_password, "
+        "SELECT u.user_id, u.username, u.user_type, u.must_change_password, u.public_code, u.approval_status, "
         "coalesce(m.manager_name, s.seller_name, b.buyer_name) AS name "
         "FROM session_token t JOIN app_user u ON u.user_id = t.user_id "
         "LEFT JOIN pool_manager m ON m.user_id = u.user_id LEFT JOIN seller s ON s.seller_id = u.user_id "
@@ -126,6 +129,8 @@ std::optional<SessionInfo> Engine::find_session(const std::string& token_hex) {
     s.username = r[0]["username"].as<std::string>();
     s.type = r[0]["user_type"].as<std::string>();
     s.name = r[0]["name"].as<std::string>();
+    s.public_code = r[0]["public_code"].as<std::string>();
+    s.approval = r[0]["approval_status"].as<std::string>();
     s.must_change_password = r[0]["must_change_password"].as<bool>();
     return s;
 }
@@ -151,13 +156,18 @@ json Engine::list_users() {
     ReadTx rt(*impl_);
     json out = json::array();
     for (const auto& r : rt.tx.exec(
-             "SELECT u.user_id, u.username, u.user_type, u.is_active, u.must_change_password, "
+             "SELECT u.user_id, u.username, u.user_type, u.is_active, u.must_change_password, u.public_code, u.phone, u.approval_status, "
+             "u.id_doc_type, u.id_last4, " + secs("u.verified_at") + " AS verified_at, vm.manager_name AS verified_by_name, "
              "coalesce(m.manager_name, s.seller_name, b.buyer_name) AS name "
              "FROM app_user u LEFT JOIN pool_manager m ON m.user_id = u.user_id LEFT JOIN seller s ON s.seller_id = u.user_id "
-             "LEFT JOIN buyer b ON b.buyer_id = u.user_id ORDER BY u.user_id"))
+             "LEFT JOIN buyer b ON b.buyer_id = u.user_id LEFT JOIN pool_manager vm ON vm.user_id = u.verified_by ORDER BY u.user_id"))
         out.push_back({{"user_id", r["user_id"].as<i64>()}, {"name", r["name"].as<std::string>()},
                        {"username", r["username"].as<std::string>()}, {"type", r["user_type"].as<std::string>()},
-                       {"status", !r["is_active"].as<bool>() ? "inactive" : r["must_change_password"].as<bool>() ? "waiting_first_login" : "active"}});
+                       {"code", r["public_code"].as<std::string>()}, {"phone", opt_str(r["phone"])},
+                       {"id_doc_type", opt_str(r["id_doc_type"])}, {"id_last4", opt_str(r["id_last4"])},
+                       {"verified_at", opt_str(r["verified_at"])}, {"verified_by", opt_str(r["verified_by_name"])},
+                       {"status", !r["is_active"].as<bool>() ? "inactive" : r["approval_status"].as<std::string>() == "PENDING" ? "pending"
+                                  : r["must_change_password"].as<bool>() ? "waiting_first_login" : "active"}});
     return out;
 }
 
@@ -406,8 +416,8 @@ json Engine::farmer_statement(i64 farmer_id, i64 pool_id) {
     if (bal.empty()) throw DomainError("NOT_FOUND", "this farmer has no share in the pool");
     const i64 left = bal[0][0].as<i64>();
 
-    const std::string farmer_name = rt.tx.exec_params1("SELECT seller_name FROM seller WHERE seller_id = $1", farmer_id)[0].as<std::string>();
-    json out = {{"farmer_name", farmer_name}, {"pool_id", pool_id}, {"commodity", p[0]["commodity"].as<std::string>()}, {"variety", p[0]["variety"].as<std::string>()},
+    const pqxx::row who = rt.tx.exec_params1("SELECT s.seller_name, u.public_code FROM seller s JOIN app_user u ON u.user_id = s.seller_id WHERE s.seller_id = $1", farmer_id);
+    json out = {{"farmer_name", who[0].as<std::string>()}, {"farmer_code", who[1].as<std::string>()}, {"pool_id", pool_id}, {"commodity", p[0]["commodity"].as<std::string>()}, {"variety", p[0]["variety"].as<std::string>()},
                 {"range_no", p[0]["range_no"].as<int>()}, {"status", p[0]["status"].as<std::string>()}, {"stock_g", stock},
                 {"price_paise_per_kg", p[0]["price_paise_per_kg"].as<i64>()}};
     const i64 deposited = rt.tx.exec_params1("SELECT coalesce(sum(quantity_g),0)::bigint FROM contribution WHERE pool_id = $1 AND seller_id = $2", pool_id, farmer_id)[0].as<i64>();

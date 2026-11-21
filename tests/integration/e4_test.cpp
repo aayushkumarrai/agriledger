@@ -1,7 +1,9 @@
 // E4 integration tests: a real server (in this process, free port) over HTTP and WebSocket, against the real database.
+#include <atomic>
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <random>
 #include <set>
 #include <thread>
 
@@ -72,6 +74,7 @@ protected:
         c.pwhash_opslimit = 1;     // the cheapest argon2id setting so tests stay fast; production uses libsodium's defaults
         c.pwhash_memlimit = 8192;
         c.max_photo_bytes = 100 * 1024;
+        c.signup_max_attempts_per_hour = 500;   // the sign-up throttle has its own test with its own server
         server = std::make_unique<e4::Server>(c);
         server->start();
     }
@@ -998,4 +1001,172 @@ TEST_F(E4Test, WhoAmIAnswersEveryRoleAndRefusesAnonymous) {
     const Response r = c.get("/auth/me");
     EXPECT_EQ(r.status, 200);
     EXPECT_TRUE(r.j()["must_change_password"].get<bool>());
+}
+
+// ---- sign-up, approval and the people tools (decision N, 21 Nov) --------------------------------------------------------
+namespace {
+std::string unique_phone() {   // a valid 10-digit mobile number that no other test has used
+    static std::atomic<unsigned long> n{0};
+    std::random_device rd;
+    return "9" + std::to_string(100000000 + (rd() % 800000) * 1000 + (n++ % 1000)).substr(0, 9);
+}
+json signup_body(const std::string& type, const std::string& phone, const std::string& name = "Self Signed") {
+    return {{"name", name}, {"phone", phone}, {"type", type}, {"password", kPass},
+            {"id_doc_type", type == "FARMER" ? "LAND_RECORD" : "GST"}, {"id_last4", "4821"}};
+}
+}  // namespace
+
+TEST_F(E4Test, SignUpMakesAPendingAccount_ApprovalUnlocksDepositsAndPurchases) {
+    build_world();
+    const i64 pool = make_worked_example_pool();
+
+    // a farmer signs up: signed in at once, pending, with a generated ID
+    Client f = anon();
+    const std::string fphone = unique_phone();
+    const Response su = f.post("/auth/signup", signup_body("FARMER", fphone, "Pending Farmer"));
+    ASSERT_EQ(su.status, 201) << su.body;
+    EXPECT_EQ(su.j()["role"], "farmer");
+    EXPECT_EQ(su.j()["approval"], "PENDING");
+    ASSERT_FALSE(su.set_cookies.empty());
+    f.cookie = su.set_cookies[0].substr(0, su.set_cookies[0].find(';'));
+    const json me = f.get("/auth/me").j();
+    EXPECT_EQ(me["approval"], "PENDING");
+    EXPECT_FALSE(me["must_change_password"].get<bool>()) << "they chose their own password";
+    EXPECT_EQ(me["code"].get<std::string>().substr(0, 2), "F-");
+    const i64 fid = me["user_id"].get<i64>();
+
+    // the Manager sees them as pending, with the document type and last four characters, never a password hash
+    json listed;
+    for (const json& u : mgr.get("/users").j()) if (u["user_id"].get<i64>() == fid) listed = u;
+    ASSERT_FALSE(listed.is_null());
+    EXPECT_EQ(listed["status"], "pending");
+    EXPECT_EQ(listed["phone"], fphone);
+    EXPECT_EQ(listed["id_doc_type"], "LAND_RECORD");
+    EXPECT_EQ(listed["id_last4"], "4821");
+    EXPECT_TRUE(listed["verified_at"].is_null());
+    EXPECT_EQ(listed.dump().find("argon2"), std::string::npos);
+
+    // no deposits until approved
+    Response dep = mgr.post(P(pool) + "/contributions", {{"seller_id", fid}, {"quantity_g", 100000}});
+    EXPECT_EQ(dep.status, 409);
+    EXPECT_EQ(dep.j()["error"], "FARMER_NOT_APPROVED");
+    ASSERT_EQ(mgr.post("/users/" + std::to_string(fid) + "/approve", json::object()).status, 200);
+    EXPECT_EQ(mgr.post(P(pool) + "/contributions", {{"seller_id", fid}, {"quantity_g", 100000}}).status, 201);
+    for (const json& u : mgr.get("/users").j())
+        if (u["user_id"].get<i64>() == fid) { EXPECT_EQ(u["status"], "active"); EXPECT_EQ(u["verified_by"], "Pool Manager"); EXPECT_FALSE(u["verified_at"].is_null()); }
+    EXPECT_EQ(f.get("/auth/me").j()["approval"], "APPROVED");
+
+    // a buyer signs up: can look at pools but not buy until approved
+    Client b = anon();
+    const std::string bphone = unique_phone();
+    const Response bs = b.post("/auth/signup", signup_body("BUYER", bphone, "Pending Buyer"));
+    ASSERT_EQ(bs.status, 201) << bs.body;
+    b.cookie = bs.set_cookies[0].substr(0, bs.set_cookies[0].find(';'));
+    const i64 bid = b.get("/auth/me").j()["user_id"].get<i64>();
+    EXPECT_EQ(b.get("/pools").status, 200);
+    const Response refused = sale(b, pool, 100000);
+    EXPECT_EQ(refused.status, 409);
+    EXPECT_EQ(refused.j()["error"], "BUYER_NOT_APPROVED");
+    ASSERT_EQ(mgr.post("/users/" + std::to_string(bid) + "/approve", json::object()).status, 200);
+    const Response bought = sale(b, pool, 100000);
+    EXPECT_EQ(bought.status, 200) << bought.body;
+
+    // the mobile number signs in, on a fresh client
+    Client again = anon();
+    EXPECT_EQ(again.login(fphone, kPass).status, 200);
+}
+
+TEST_F(E4Test, SignUpRefusesBadInput_NoSelfMadeManagers_NoDuplicateMobileNumbers) {
+    build_world();
+    const std::string phone = unique_phone();
+    Client c = anon();
+    EXPECT_EQ(c.post("/auth/signup", signup_body("MANAGER", phone)).status, 400) << "nobody signs themselves up as a Pool Manager";
+    json wrong_doc = signup_body("FARMER", phone); wrong_doc["id_doc_type"] = "GST";
+    EXPECT_EQ(c.post("/auth/signup", wrong_doc).status, 400) << "a farmer cannot use a trade document";
+    json short_pw = signup_body("BUYER", phone); short_pw["password"] = "short";
+    EXPECT_EQ(c.post("/auth/signup", short_pw).status, 400);
+    json bad_phone = signup_body("BUYER", "1234567890");
+    EXPECT_EQ(c.post("/auth/signup", bad_phone).status, 400) << "must start with 6, 7, 8 or 9";
+    json bad_last4 = signup_body("BUYER", phone); bad_last4["id_last4"] = "12 4";
+    EXPECT_EQ(c.post("/auth/signup", bad_last4).status, 400);
+    json no_doc = signup_body("BUYER", phone); no_doc.erase("id_doc_type");
+    EXPECT_EQ(c.post("/auth/signup", no_doc).status, 400);
+    EXPECT_EQ(c.post_raw("/auth/signup", "name=x", "application/x-www-form-urlencoded").status, 415);
+    Client hostile = anon(); hostile.extra_headers = {{"Origin", "https://evil.example"}};
+    EXPECT_EQ(hostile.post("/auth/signup", signup_body("BUYER", phone)).status, 403);
+
+    ASSERT_EQ(c.post("/auth/signup", signup_body("BUYER", phone)).status, 201);
+    const Response dup = anon().post("/auth/signup", signup_body("FARMER", phone));
+    EXPECT_EQ(dup.status, 409);
+    EXPECT_EQ(dup.j()["error"], "DUPLICATE_PHONE");
+    EXPECT_EQ(mgr.post("/users", {{"name", "X"}, {"phone", phone}, {"type", "FARMER"}, {"temporary_password", kTemp}}).status, 409);
+}
+
+TEST_F(E4Test, SignUpIsThrottledPerAddress) {
+    e4::Config c;
+    c.db_conninfo = app_conninfo();
+    c.port = 0;
+    c.photo_dir = photo_dir;
+    c.web_dir = AGRI_WEB_DIR;
+    c.pwhash_opslimit = 1; c.pwhash_memlimit = 8192;
+    c.signup_max_attempts_per_hour = 3;
+    e4::Server small(c);
+    small.start();
+    for (int i = 0; i < 3; ++i) EXPECT_EQ(Client(small.port()).post("/auth/signup", signup_body("BUYER", unique_phone())).status, 201) << i;
+    EXPECT_EQ(Client(small.port()).post("/auth/signup", signup_body("BUYER", unique_phone())).status, 429);
+    small.stop();
+}
+
+TEST_F(E4Test, PeopleToolsAreForThePoolManagerOnly_DeactivateKeepsHistory) {
+    build_world();
+    const i64 pool = make_worked_example_pool();
+    const std::string path = "/users/" + std::to_string(farmer[0].id);
+    for (Client* c : {&farmer_c[1], &buyer_c[0]}) {
+        EXPECT_EQ(c->post(path + "/approve", json::object()).status, 403);
+        EXPECT_EQ(c->post(path + "/deactivate", json::object()).status, 403);
+        EXPECT_EQ(c->post(path + "/reactivate", json::object()).status, 403);
+        EXPECT_EQ(c->patch(path, {{"name", "Changed"}}).status, 403);
+    }
+    Client nobody = anon();
+    EXPECT_EQ(nobody.post(path + "/deactivate", json::object()).status, 401);
+    EXPECT_EQ(mgr.post("/users/" + std::to_string(manager.id) + "/deactivate", json::object()).status, 404) << "a Pool Manager cannot be changed here";
+    EXPECT_EQ(mgr.post("/users/999999999/approve", json::object()).status, 404);
+
+    // deactivating ends the session and the sign-in, but the ledgers keep the person
+    EXPECT_EQ(farmer_c[0].get("/me/pools").status, 200);
+    ASSERT_EQ(mgr.post(path + "/deactivate", json::object()).status, 200);
+    EXPECT_EQ(farmer_c[0].get("/me/pools").status, 401);
+    EXPECT_EQ(anon().login(farmer[0].username, kPass).status, 401);
+    EXPECT_EQ(mgr.post(P(pool) + "/contributions", {{"seller_id", farmer[0].id}, {"quantity_g", 100000}}).status, 409);
+    const json statement = mgr.get("/farmers/" + std::to_string(farmer[0].id) + "/statement?pool=" + std::to_string(pool)).j();
+    EXPECT_EQ(statement["summary"]["deposited_g"], 600000) << "the 600 kg deposit is still on record";
+    ASSERT_EQ(mgr.post(path + "/reactivate", json::object()).status, 200);
+    EXPECT_EQ(anon().login(farmer[0].username, kPass).status, 200);
+
+    // editing: name, mobile number (unique), document (a changed document is checked again)
+    EXPECT_EQ(mgr.patch(path, json::object()).status, 400);
+    EXPECT_EQ(mgr.patch(path, {{"name", "Renamed Farmer"}}).status, 200);
+    const std::string phone = unique_phone();
+    EXPECT_EQ(mgr.patch(path, {{"phone", phone}}).status, 200);
+    EXPECT_EQ(mgr.patch("/users/" + std::to_string(farmer[1].id), {{"phone", phone}}).status, 409);
+    EXPECT_EQ(mgr.patch(path, {{"phone", "12345"}}).status, 400);
+    EXPECT_EQ(mgr.patch(path, {{"id_doc_type", "PAN"}}).status, 400) << "type and last four go together";
+    EXPECT_EQ(mgr.post(path + "/approve", json::object()).status, 409) << "no identity document is recorded yet";
+    ASSERT_EQ(mgr.patch(path, {{"id_doc_type", "AADHAAR"}, {"id_last4", "0042"}}).status, 200);
+    for (const json& u : mgr.get("/users").j())
+        if (u["user_id"].get<i64>() == farmer[0].id) { EXPECT_EQ(u["name"], "Renamed Farmer"); EXPECT_EQ(u["status"], "pending"); EXPECT_EQ(u["id_last4"], "0042"); }
+    ASSERT_EQ(mgr.post(path + "/approve", json::object()).status, 200);
+    EXPECT_EQ(farmer_c[0].get("/me/pools").status, 401) << "the old session was ended by the deactivation";
+}
+
+TEST_F(E4Test, PoolMarketIsStoredAndShown) {
+    build_world();
+    const Response r = mgr.post("/pools", {{"commodity_id", paddy_id()}, {"variety", "Sona Masuri"}, {"range_no", 1}, {"storage_location", "Test godown"},
+                                           {"market", "Hubballi APMC"}, {"min_order_g", 100000}, {"price_paise_per_kg", 2500}});
+    ASSERT_EQ(r.status, 201) << r.body;
+    const i64 pool = r.j()["pool_id"];
+    EXPECT_EQ(mgr.get(P(pool)).j()["market"], "Hubballi APMC");
+    EXPECT_TRUE(mgr.get(P(make_draft_pool())).j()["market"].is_null());
+    EXPECT_EQ(mgr.post("/pools", {{"commodity_id", paddy_id()}, {"variety", "X"}, {"range_no", 1}, {"storage_location", "g"}, {"market", ""},
+                                  {"min_order_g", 100000}, {"price_paise_per_kg", 2500}}).status, 400);
 }

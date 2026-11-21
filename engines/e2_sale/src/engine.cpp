@@ -35,6 +35,18 @@ bool username_ok(const std::string& u) {
     return std::all_of(u.begin(), u.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == '_' || c == '-'; });
 }
 
+bool phone_ok(const std::string& p) {   // a 10-digit Indian mobile number: starts with 6, 7, 8 or 9
+    return p.size() == 10 && p[0] >= '6' && p[0] <= '9' && std::all_of(p.begin(), p.end(), [](char c) { return c >= '0' && c <= '9'; });
+}
+
+bool id_doc_ok(const std::optional<std::string>& type, const std::optional<std::string>& last4) {
+    if (type.has_value() != last4.has_value()) return false;
+    if (!type) return true;
+    static const char* kTypes[] = {"APMC_REG", "LAND_RECORD", "AADHAAR", "TRADE_LICENCE", "GST", "PAN"};
+    if (std::none_of(std::begin(kTypes), std::end(kTypes), [&](const char* k) { return *type == k; })) return false;
+    return last4->size() == 4 && std::all_of(last4->begin(), last4->end(), [](unsigned char c) { return std::isalnum(c) != 0; });
+}
+
 std::string receipt_no(i64 sale_id) {
     char buf[32];
     std::snprintf(buf, sizeof buf, "R-%04lld", static_cast<long long>(sale_id));
@@ -99,18 +111,76 @@ i64 Engine::create_user(const NewUser& u) {
     require(!u.name.empty() && u.name.size() <= 100, "INVALID", "name must be 1-100 characters");
     require(u.type == "MANAGER" || u.type == "FARMER" || u.type == "BUYER", "INVALID", "unknown user type");
     require(!u.password_hash.empty(), "INVALID", "password hash is missing");
+    require(!u.phone || phone_ok(*u.phone), "INVALID", "mobile number must be 10 digits starting with 6, 7, 8 or 9");
+    require(id_doc_ok(u.id_doc_type, u.id_last4), "INVALID", "identity document type and its last four characters go together");
+    require(u.type != "MANAGER" || !u.pending, "INVALID", "a Pool Manager cannot be pending");
     try {
         return transact(*impl_, [&](pqxx::work& tx) {
+            // the mobile number is the sign-in name for most people, so say which of the two was taken
+            if (u.phone && !tx.exec_params("SELECT 1 FROM app_user WHERE phone = $1", *u.phone).empty())
+                throw DomainError("DUPLICATE_PHONE", "that mobile number is already registered");
+            if (!tx.exec_params("SELECT 1 FROM app_user WHERE username = $1 OR phone = $1", u.username).empty())
+                throw DomainError("DUPLICATE_USERNAME", "that username is already taken");
             const i64 id = tx.exec_params1(
-                "INSERT INTO app_user(username, password_hash, user_type) VALUES ($1, $2, $3) RETURNING user_id",
-                u.username, u.password_hash, u.type)[0].as<i64>();
+                "INSERT INTO app_user(username, password_hash, user_type, phone, approval_status, must_change_password, id_doc_type, id_last4) "
+                "VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING user_id",
+                u.username, u.password_hash, u.type, u.phone, u.pending ? "PENDING" : "APPROVED", u.must_change_password,
+                u.id_doc_type, u.id_last4)[0].as<i64>();
             if (u.type == "MANAGER") tx.exec_params0("INSERT INTO pool_manager(user_id, manager_name) VALUES ($1, $2)", id, u.name);
             else if (u.type == "FARMER") tx.exec_params0("INSERT INTO seller(seller_id, seller_name) VALUES ($1, $2)", id, u.name);
             else tx.exec_params0("INSERT INTO buyer(buyer_id, buyer_name) VALUES ($1, $2)", id, u.name);
             return id;
         });
-    } catch (const pqxx::unique_violation&) {
+    } catch (const pqxx::unique_violation& e) {
+        if (std::string(e.what()).find("phone") != std::string::npos) throw DomainError("DUPLICATE_PHONE", "that mobile number is already registered");
         throw DomainError("DUPLICATE_USERNAME", "that username is already taken");
+    }
+}
+
+// ---- the Pool Manager's people tools ---------------------------------------------------------------------------------
+
+namespace {
+void require_person(pqxx::work& tx, i64 user_id) {   // Farmer or Buyer only: Managers are never changed through these
+    require(!tx.exec_params("SELECT 1 FROM app_user WHERE user_id = $1 AND user_type IN ('FARMER','BUYER') FOR UPDATE", user_id).empty(),
+            "NOT_FOUND", "person not found");
+}
+}  // namespace
+
+void Engine::approve_user(i64 user_id, i64 manager_id) {
+    transact(*impl_, [&](pqxx::work& tx) {
+        require_person(tx, user_id);
+        require(!tx.exec_params("SELECT 1 FROM app_user WHERE user_id = $1 AND id_doc_type IS NOT NULL", user_id).empty(), "NO_ID_DOCUMENT",
+                "an identity document must be recorded before approval");
+        tx.exec_params0("UPDATE app_user SET approval_status = 'APPROVED', verified_by = $2, verified_at = now() WHERE user_id = $1", user_id, manager_id);
+    });
+}
+
+void Engine::set_user_active(i64 user_id, bool active) {
+    transact(*impl_, [&](pqxx::work& tx) {
+        require_person(tx, user_id);
+        tx.exec_params0("UPDATE app_user SET is_active = $2 WHERE user_id = $1", user_id, active);
+        if (!active) tx.exec_params0("DELETE FROM session_token WHERE user_id = $1", user_id);
+    });
+}
+
+void Engine::update_user(i64 user_id, const UserEdit& e) {
+    require(!e.name || (!e.name->empty() && e.name->size() <= 100), "INVALID", "name must be 1-100 characters");
+    require(!e.phone || phone_ok(*e.phone), "INVALID", "mobile number must be 10 digits starting with 6, 7, 8 or 9");
+    require(id_doc_ok(e.id_doc_type, e.id_last4), "INVALID", "identity document type and its last four characters go together");
+    try {
+        transact(*impl_, [&](pqxx::work& tx) {
+            require_person(tx, user_id);
+            if (e.name) {
+                tx.exec_params0("UPDATE seller SET seller_name = $2 WHERE seller_id = $1", user_id, *e.name);
+                tx.exec_params0("UPDATE buyer SET buyer_name = $2 WHERE buyer_id = $1", user_id, *e.name);
+            }
+            if (e.phone) tx.exec_params0("UPDATE app_user SET phone = $2 WHERE user_id = $1", user_id, *e.phone);
+            if (e.id_doc_type)   // a changed document is a new document: it has to be checked again
+                tx.exec_params0("UPDATE app_user SET id_doc_type = $2, id_last4 = $3, verified_by = NULL, verified_at = NULL, approval_status = 'PENDING' WHERE user_id = $1",
+                                user_id, *e.id_doc_type, *e.id_last4);
+        });
+    } catch (const pqxx::unique_violation&) {
+        throw DomainError("DUPLICATE_PHONE", "that mobile number is already registered");
     }
 }
 
@@ -123,12 +193,13 @@ i64 Engine::create_pool(const NewPool& p, i64 actor) {
     require(!p.packaging || p.packaging->size() <= 60, "INVALID", "packaging must be at most 60 characters");
     require(p.min_order_g > 0 && p.min_order_g <= kMaxGrams, "INVALID", "minimum order is out of range");
     require(p.price_paise_per_kg > 0 && p.price_paise_per_kg <= kMaxPrice, "INVALID", "price is out of range");
+    require(!p.market || (!p.market->empty() && p.market->size() <= 80), "INVALID", "market must be 1-80 characters");
     return transact(*impl_, [&](pqxx::work& tx) {
         require(!tx.exec_params("SELECT 1 FROM commodity WHERE commodity_id = $1", p.commodity_id).empty(), "NOT_FOUND", "commodity not found");
         const i64 pool_id = tx.exec_params1(
-            "INSERT INTO pool(commodity_id, variety, range_no, packaging, storage_location, min_order_g, display_unit, price_paise_per_kg) "
-            "VALUES ($1, $2, $3, $4, $5, $6, 'quintal', $7) RETURNING pool_id",
-            p.commodity_id, p.variety, static_cast<int>(p.range_no), p.packaging, p.storage_location, p.min_order_g,
+            "INSERT INTO pool(commodity_id, variety, range_no, packaging, storage_location, market, min_order_g, display_unit, price_paise_per_kg) "
+            "VALUES ($1, $2, $3, $4, $5, $6, $7, 'quintal', $8) RETURNING pool_id",
+            p.commodity_id, p.variety, static_cast<int>(p.range_no), p.packaging, p.storage_location, p.market, p.min_order_g,
             p.price_paise_per_kg)[0].as<i64>();
         const EventRef ev = insert_event(tx, pool_id, "POOL_CREATED", actor);
         tx.exec_params0("INSERT INTO inventory_ledger(event_id, pool_id, movement_type, delta_g, resulting_stock_g) VALUES ($1, $2, 'OPEN', 0, 0)",
@@ -149,6 +220,8 @@ ContributionResult Engine::record_contribution(i64 pool_id, i64 seller_id, i64 q
         require(pool.status == "draft" || pool.status == "open", "POOL_NOT_OPEN", "this pool is closed");
         require(pool.total_stock_g <= kMaxGrams - quantity_g, "INVALID", "pool stock would be out of range");
         require(!tx.exec_params("SELECT 1 FROM seller WHERE seller_id = $1", seller_id).empty(), "NOT_FOUND", "farmer not found");
+        require(!tx.exec_params("SELECT 1 FROM app_user WHERE user_id = $1 AND is_active AND approval_status = 'APPROVED'", seller_id).empty(),
+                "FARMER_NOT_APPROVED", "this farmer's account is not approved");
 
         const EventRef ev = insert_event(tx, pool_id, "CONTRIBUTION", actor);
         tx.exec_params0("INSERT INTO contribution(event_id, pool_id, seller_id, quantity_g) VALUES ($1, $2, $3, $4)",
@@ -255,6 +328,8 @@ SaleOutcome Engine::execute_sale(const SaleRequest& req, const SaleStepHook* hoo
         // A twin request may have committed while this one waited for the lock.
         if (auto dup = find_existing_sale(tx, req)) return accepted(std::move(*dup));
         require(!tx.exec_params("SELECT 1 FROM buyer WHERE buyer_id = $1", req.buyer_id).empty(), "NOT_FOUND", "buyer not found");
+        require(!tx.exec_params("SELECT 1 FROM app_user WHERE user_id = $1 AND is_active AND approval_status = 'APPROVED'", req.buyer_id).empty(),
+                "BUYER_NOT_APPROVED", "this buyer's account is not approved");
         step(SaleStep::PoolLocked);
 
         // 3-6. Checks against the locked row, in the spec's order. A rejection leaves nothing behind (tx aborts).

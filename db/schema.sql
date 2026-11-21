@@ -16,8 +16,20 @@ CREATE TABLE app_user (
     password_hash  TEXT         NOT NULL,                 -- argon2id string
     user_type      VARCHAR(10)  NOT NULL CHECK (user_type IN ('MANAGER','FARMER','BUYER')),
     is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
-    must_change_password BOOLEAN NOT NULL DEFAULT TRUE,  -- accounts are created by the Pool Manager; first login forces a change
+    must_change_password BOOLEAN NOT NULL DEFAULT TRUE,  -- accounts made by the Pool Manager force a change at first login; self sign-up does not
     created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    -- sign-up and identity (decision N, 21 Nov): the person's own mobile number, a generated public ID, the Pool Manager's approval,
+    -- and a record of which identity document was checked (type and last four characters only; no card images are stored)
+    phone          VARCHAR(10)  UNIQUE CHECK (phone ~ '^[6-9][0-9]{9}$'),
+    public_code    VARCHAR(12)  GENERATED ALWAYS AS (
+                       CASE user_type WHEN 'FARMER' THEN 'F' WHEN 'BUYER' THEN 'B' ELSE 'M' END || '-' || lpad(user_id::text, 4, '0')) STORED UNIQUE,
+    approval_status VARCHAR(8)  NOT NULL DEFAULT 'APPROVED' CHECK (approval_status IN ('PENDING','APPROVED')),   -- self sign-ups start PENDING
+    id_doc_type    VARCHAR(20)  CHECK (id_doc_type IN ('APMC_REG','LAND_RECORD','AADHAAR','TRADE_LICENCE','GST','PAN')),
+    id_last4       VARCHAR(4)   CHECK (id_last4 ~ '^[0-9A-Za-z]{4}$'),
+    verified_by    BIGINT       REFERENCES app_user(user_id),
+    verified_at    TIMESTAMPTZ,
+    CHECK ((id_doc_type IS NULL) = (id_last4 IS NULL)),
+    CHECK ((verified_by IS NULL) = (verified_at IS NULL)),
     UNIQUE (user_id, user_type)          -- target of the subclass FKs (keeps the ISA disjoint)
 );
 
@@ -97,6 +109,7 @@ CREATE TABLE pool (
     range_no            SMALLINT     NOT NULL CHECK (range_no BETWEEN 1 AND 3),  -- the pool's grade
     packaging           VARCHAR(60),
     storage_location    VARCHAR(120) NOT NULL,                   -- where the stock is held / collected from
+    market              VARCHAR(80),                             -- the APMC / market the pool belongs to (buyers can filter by it)
     min_order_g         BIGINT       NOT NULL CHECK (min_order_g > 0),
     status              VARCHAR(6)   NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','open','closed')),
     display_unit        VARCHAR(10)  NOT NULL CHECK (display_unit IN ('kg','quintal')),

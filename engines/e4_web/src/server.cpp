@@ -108,6 +108,7 @@ struct Server::Impl {
     PasswordHasher hasher;
     LoginLimiter limiter;
     LoginLimiter ip_limiter;
+    LoginLimiter signup_limiter;   // sign-up attempts per address per hour (every attempt counts)
     LiveHub hub;
     crow::SimpleApp app;
     std::future<void> running;
@@ -124,7 +125,7 @@ struct Server::Impl {
     explicit Impl(Config c)
         : cfg(std::move(c)), engine(engine_config(cfg)), queue(e3::sale_callbacks(engine), cfg.queue),
           hasher(cfg.pwhash_opslimit, cfg.pwhash_memlimit), limiter(cfg.login_max_failures, cfg.login_window_seconds),
-          ip_limiter(cfg.login_max_failures_per_ip, cfg.login_window_seconds), hub(engine, cfg.db_conninfo) {
+          ip_limiter(cfg.login_max_failures_per_ip, cfg.login_window_seconds), signup_limiter(cfg.signup_max_attempts_per_hour, 3600), hub(engine, cfg.db_conninfo) {
         crow::logger::setLogLevel(crow::LogLevel::Warning);
     }
 
@@ -194,7 +195,48 @@ struct Server::Impl {
                 engine.create_session(user->user_id, token, cfg.session_ttl_seconds);
                 std::string role = user->type;
                 std::transform(role.begin(), role.end(), role.begin(), [](unsigned char c) { return std::tolower(c); });
-                crow::response r = json_response(200, {{"role", role}, {"must_change_password", user->must_change_password}, {"name", user->name}});
+                crow::response r = json_response(200, {{"role", role}, {"must_change_password", user->must_change_password}, {"name", user->name}, {"approval", user->approval}});
+                r.add_header("Set-Cookie", cookie_header(token, cfg.session_ttl_seconds));
+                return r;
+            } catch (...) {
+                return map_current_exception();
+            }
+        });
+
+        // Self sign-up for Farmers and Buyers (never Managers). The account starts PENDING: the Pool Manager checks the identity
+        // document in person and approves. Signs the new person in so they land on their own home page.
+        CROW_ROUTE(app, "/auth/signup").methods(crow::HTTPMethod::Post)([this](const crow::request& req) {
+            try {
+                if (!same_origin(req)) return error_response(403, "BAD_ORIGIN");
+                if (signup_limiter.blocked(req.remote_ip_address)) {
+                    crow::response r = error_response(429, "TOO_MANY_ATTEMPTS");
+                    r.set_header("Retry-After", std::to_string(signup_limiter.window_seconds()));
+                    return r;
+                }
+                signup_limiter.failure(req.remote_ip_address);
+                const json j = body_object(req);
+                const std::string type = need_str(j, "type", 1, 10);
+                if (type != "FARMER" && type != "BUYER") throw HttpError(400, "INVALID_FIELD");   // nobody can sign themselves up as a Manager
+                e2::NewUser u;
+                u.name = need_str(j, "name", 1, 100);
+                u.type = type;
+                const std::string phone = need_str(j, "phone", 10, 10), password = need_str(j, "password", 8, 200);
+                const std::string doc = need_str(j, "id_doc_type", 1, 20);
+                const bool farmer_doc = doc == "APMC_REG" || doc == "LAND_RECORD" || doc == "AADHAAR", buyer_doc = doc == "TRADE_LICENCE" || doc == "GST" || doc == "PAN";
+                if (!(type == "FARMER" ? farmer_doc : buyer_doc)) throw HttpError(400, "INVALID_FIELD");
+                u.username = phone;   // the mobile number is the sign-in name
+                u.phone = phone;
+                u.id_doc_type = doc;
+                u.id_last4 = need_str(j, "id_last4", 4, 4);
+                u.password_hash = hasher.hash(password);
+                u.pending = true;
+                u.must_change_password = false;   // they chose this password themselves
+                const i64 id = engine.create_user(u);
+                const std::string token = new_session_token();
+                engine.create_session(id, token, cfg.session_ttl_seconds);
+                std::string role = type;
+                std::transform(role.begin(), role.end(), role.begin(), [](unsigned char c) { return std::tolower(c); });
+                crow::response r = json_response(201, {{"role", role}, {"must_change_password", false}, {"name", u.name}, {"approval", "PENDING"}});
                 r.add_header("Set-Cookie", cookie_header(token, cfg.session_ttl_seconds));
                 return r;
             } catch (...) {
@@ -218,7 +260,8 @@ struct Server::Impl {
             return guarded(req, kAny, [&](const Principal& p) {
                 std::string role = p.s.type;
                 std::transform(role.begin(), role.end(), role.begin(), [](unsigned char c) { return std::tolower(c); });
-                return json_response(200, {{"user_id", p.s.user_id}, {"role", role}, {"name", p.s.name}, {"must_change_password", p.s.must_change_password}});
+                return json_response(200, {{"user_id", p.s.user_id}, {"role", role}, {"name", p.s.name}, {"code", p.s.public_code}, {"approval", p.s.approval},
+                                           {"must_change_password", p.s.must_change_password}});
             }, /*password_change_exempt=*/true);
         });
 
@@ -249,10 +292,39 @@ struct Server::Impl {
                 const json j = body_object(req);
                 const std::string type = need_str(j, "type", 1, 10);
                 if (type != "FARMER" && type != "BUYER") throw HttpError(400, "INVALID_FIELD");   // no way to create a Manager through the API
-                const std::string name = need_str(j, "name", 1, 100), username = need_str(j, "username", 3, 50);
-                const std::string temporary = need_str(j, "temporary_password", 8, 200);
-                const i64 id = engine.create_user({name, username, type, hasher.hash(temporary)});
-                return json_response(201, {{"user_id", id}});
+                e2::NewUser u;
+                u.name = need_str(j, "name", 1, 100);
+                u.type = type;
+                u.phone = opt_str(j, "phone", 10);
+                const auto username = opt_str(j, "username", 50);
+                if (!username && !u.phone) throw HttpError(400, "MISSING_FIELD");
+                u.username = username ? *username : *u.phone;   // the mobile number is the sign-in name unless one is given
+                u.password_hash = hasher.hash(need_str(j, "temporary_password", 8, 200));
+                return json_response(201, {{"user_id", engine.create_user(u)}});   // approved at once: the Manager is adding them in person
+            });
+        });
+
+        // The Pool Manager's people tools: approve (the identity document was checked), deactivate / reactivate, edit details.
+        CROW_ROUTE(app, "/users/<int>/approve").methods(crow::HTTPMethod::Post)([this](const crow::request& req, int id) {
+            return guarded(req, kManager, [&](const Principal& p) { engine.approve_user(id, p.s.user_id); return json_response(200, json::object()); });
+        });
+        CROW_ROUTE(app, "/users/<int>/deactivate").methods(crow::HTTPMethod::Post)([this](const crow::request& req, int id) {
+            return guarded(req, kManager, [&](const Principal&) { engine.set_user_active(id, false); hub.sweep(); return json_response(200, json::object()); });
+        });
+        CROW_ROUTE(app, "/users/<int>/reactivate").methods(crow::HTTPMethod::Post)([this](const crow::request& req, int id) {
+            return guarded(req, kManager, [&](const Principal&) { engine.set_user_active(id, true); return json_response(200, json::object()); });
+        });
+        CROW_ROUTE(app, "/users/<int>").methods(crow::HTTPMethod::Patch)([this](const crow::request& req, int id) {
+            return guarded(req, kManager, [&](const Principal&) {
+                const json j = body_object(req);
+                e2::UserEdit e;
+                e.name = opt_str(j, "name", 100);
+                e.phone = opt_str(j, "phone", 10);
+                e.id_doc_type = opt_str(j, "id_doc_type", 20);
+                e.id_last4 = opt_str(j, "id_last4", 4);
+                if (!e.name && !e.phone && !e.id_doc_type) throw HttpError(400, "MISSING_FIELD");
+                engine.update_user(id, e);
+                return json_response(200, json::object());
             });
         });
 
@@ -276,6 +348,7 @@ struct Server::Impl {
                 np.range_no = static_cast<int>(need_int(j, "range_no", 1, 3));
                 np.packaging = opt_str(j, "packaging", 60);
                 np.storage_location = need_str(j, "storage_location", 1, 120);
+                np.market = opt_str(j, "market", 80);
                 np.min_order_g = need_int(j, "min_order_g", 1, kMaxGrams);
                 np.price_paise_per_kg = need_int(j, "price_paise_per_kg", 1, kMaxPrice);   // whole paise per kg = whole rupees per quintal
                 return json_response(201, {{"pool_id", engine.create_pool(np, p.s.user_id)}});

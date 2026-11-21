@@ -107,6 +107,16 @@ struct NewUser {
     std::string username;                   // 3..50 characters: a-z 0-9 . _ -
     std::string type;                       // MANAGER, FARMER or BUYER
     std::string password_hash;              // argon2id string made by E4; E2 never sees a password
+    std::optional<std::string> phone;       // the person's own mobile number: 10 digits, starts with 6-9
+    bool pending = false;                   // true for self sign-up: the Pool Manager must approve before deposits or purchases
+    bool must_change_password = true;        // false when the person chose their own password at sign-up
+    std::optional<std::string> id_doc_type; // APMC_REG, LAND_RECORD, AADHAAR, TRADE_LICENCE, GST or PAN
+    std::optional<std::string> id_last4;    // last four characters of that document's number (no images, no full numbers)
+};
+
+// Fields the Pool Manager may edit on a Farmer or Buyer account. Absent = unchanged.
+struct UserEdit {
+    std::optional<std::string> name, phone, id_doc_type, id_last4;
 };
 
 struct NewPool {
@@ -117,6 +127,7 @@ struct NewPool {
     std::string storage_location;
     i64 min_order_g = 0;
     i64 price_paise_per_kg = 0;
+    std::optional<std::string> market;      // the APMC / market this pool belongs to
 };
 
 struct ContributionResult { i64 event_id; i64 stock_after_g; i64 seller_balance_g; };
@@ -152,12 +163,14 @@ struct AuthUser {
     std::string username, password_hash, type, name;
     bool is_active = true;
     bool must_change_password = true;
+    std::string public_code, approval;      // F-0042 / B-0017 / M-0001; PENDING or APPROVED
 };
 
 struct SessionInfo {
     i64 user_id = 0;
     std::string username, type, name;
     bool must_change_password = true;
+    std::string public_code, approval;
 };
 
 class Engine {
@@ -197,6 +210,10 @@ public:
     void delete_other_sessions(i64 user_id, const std::string& keep_token_hex);   // after a password change
     void set_password(i64 user_id, const std::string& new_password_hash);    // also clears must_change_password
     nlohmann::json list_users();
+    // The Pool Manager's people tools (Farmer and Buyer accounts only; DomainError NOT_FOUND otherwise).
+    void approve_user(i64 user_id, i64 manager_id);           // marks the identity document as checked by this Manager, today
+    void set_user_active(i64 user_id, bool active);           // deactivate keeps every ledger row; it ends the person's sessions
+    void update_user(i64 user_id, const UserEdit& edit);
 
     // ---- reference data ----
     nlohmann::json commodities();         // with each Range's quality limits

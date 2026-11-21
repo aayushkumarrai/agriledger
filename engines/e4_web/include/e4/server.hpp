@@ -25,6 +25,7 @@ struct Config {
     int session_ttl_seconds = 8 * 3600;           // spec §6: 8 hours
     bool cookie_secure = false;                   // set true when served over HTTPS
     int login_max_failures = 5;                   // per username + address, then 429 until the window passes
+    int signup_max_attempts_per_hour = 10;        // sign-up attempts from one address; every attempt counts, then 429
     int login_max_failures_per_ip = 50;           // across all usernames from one address (credential stuffing)
     int login_window_seconds = 300;
     std::size_t max_photo_bytes = 5 * 1024 * 1024;

@@ -342,7 +342,9 @@
     "from_farmer_one": "From 1 farmer",
     "min_order": "minimum order {qty}",
     "last_sale": "last sale {date}",
-    "stored_at": "Stored at {place}"
+    "stored_at": "Stored at {place}",
+    "price_history": "Price history",
+    "price_change_row": "{old} to {new} per quintal"
   },
   "purchases": {
     "date": "Date",
@@ -410,10 +412,18 @@
     "grain_kg": "Grain (kg)",
     "have": "I have",
     "money": "Money to me",
-    "sale_row": "Sale of {sold} from the pool at {price} per quintal; my {share} share",
+    "sale_row": "Sold {sold} at {price} per quintal. My part: {mine}",
     "deposit_row": "I deposited grain",
     "subtitle": "Price {price} per quintal · Pool stock {stock}",
-    "error": "This statement could not be loaded."
+    "error": "This statement could not be loaded.",
+    "sale_to": "Bought by {buyer} · Receipt {receipt}",
+    "seal": "Seal {seal}",
+    "title": "Statement for {name}",
+    "print": "Print or save as PDF",
+    "changes_title": "Changes to this pool",
+    "change_price": "Price changed from {old} to {new} per quintal",
+    "change_status": "Status changed from {old} to {new}",
+    "of_total": "of {total}"
   },
   "event": {
     "sale": "sale",

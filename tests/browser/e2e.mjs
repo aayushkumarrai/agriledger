@@ -73,6 +73,9 @@ async function story(vp) {
   await a.page.waitForSelector('.modal :text("The price has changed")');
   check((await a.page.textContent('.modal')).includes('From ₹2,500.00 to ₹2,400.00 per quintal'), '3. a price change during confirmation is shown, and nothing was bought');
   await a.page.click('.modal button:has-text("Review and confirm again")');
+  await a.page.goto(`${base}/buyer/pool.html?id=${pricePool}`); await ready(a.page); await a.page.waitForSelector('text=Price history');
+  check(/₹2,500 to ₹2,400 per quintal/.test(await a.page.textContent('main')), '3. the price change appears in the price history');
+  await a.page.fill('#quantity', '2'); await a.page.click('button:has-text("Review order")'); await a.page.waitForSelector('.modal');
   await a.page.click('.modal button.btn--primary'); await a.page.waitForSelector('.modal :text("Purchase complete")');
 
   // 4. a double tap sends one purchase

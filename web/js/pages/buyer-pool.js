@@ -4,7 +4,7 @@ import { t } from '../i18n.js';
 import { api, ApiError } from '../api.js';
 import { h, clear, setValue, debounce, append } from '../dom.js';
 import { skeleton, errorState, emptyState, unitToggle, onUnitChange, poolStatusTag, field, button, poolCode, breadcrumb } from '../components.js';
-import { formatQuantity, formatQuantityInput, formatPricePerQuintal, formatPricePerKg, formatPaise, formatDate, formatDateTime, parseQuantity, totalPaise, getUnit, toBigInt } from '../format.js';
+import { formatQuantity, formatQuantityInput, formatPricePerQuintal, formatPricePerQuintalWhole, formatPricePerKg, formatPaise, formatDate, formatDateTime, parseQuantity, totalPaise, getUnit, toBigInt } from '../format.js';
 import { startPurchase } from '../sale-flow.js';
 
 const id = new URLSearchParams(location.search).get('id');
@@ -51,6 +51,7 @@ function build() {
   const gallery = h('div', { class: 'gallery' }, [0, 1, 2].map((i) => photos[i]
     ? h('div', { class: `photo${i === 0 ? ' gallery__main' : ''}` }, h('img', { src: photos[i].url, alt: t('photo.alt') }))
     : h('div', { class: `photo photo--empty${i === 0 ? ' gallery__main' : ''}` }, h('span', {}, t('photo.slot')))));
+  const history = h('section', { class: 'card stack', hidden: true }, h('p', { class: 'label' }, t('pool.price_history')), h('ul', { class: 'plain-list' }));
   const facts = h('dl', { class: 'facts' });
   const addFact = (label, value) => append(facts, [h('dt', {}, label), h('dd', {}, value)]);
   addFact(t('pool.commodity_variety'), `${p.commodity} · ${p.variety}`);
@@ -100,10 +101,10 @@ function build() {
     h('div', { class: 'detail-grid' },
       h('div', { class: 'stack stack--loose' }, gallery,
         h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('pool.about')), facts),
-        h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('pool.quality', { n: p.range_no })), limits)),
+        h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('pool.quality', { n: p.range_no })), limits), history),
       h('div', { class: 'stack stack--loose' }, buyBox)),
     h('div', { class: 'row row--between' }, note, h('span', {})));
-  refs = { title, tagSlot, meta, price, priceKg, avail, availUnit, compare, input, field: f, total, review, outNote, lastSale };
+  refs = { history, title, tagSlot, meta, price, priceKg, avail, availUnit, compare, input, field: f, total, review, outNote, lastSale };
 }
 
 // Fills (or refreshes) every number and label in place. Called on load, on live updates and when the unit changes.
@@ -118,6 +119,8 @@ function update(unitChanged = false) {
   r.priceKg.textContent = `= ${formatPricePerKg(p.price_paise_per_kg)} ${t('unit.per_kg')}`;
   setValue(r.avail, formatQuantity(p.stock_g, getUnit()));
   r.availUnit.textContent = unitName();
+  r.history.hidden = !(p.price_history || []).length;
+  clear(r.history.lastElementChild).append(...(p.price_history || []).map((c) => h('li', {}, h('span', { class: 'muted nowrap' }, formatDateTime(c.at)), ' ', t('pool.price_change_row', { old: formatPricePerQuintalWhole(c.old_value), new: formatPricePerQuintalWhole(c.new_value) }))));
   const ref = [];
   if (p.reference.msp) ref.push(t('buyer.msp_line', { label: p.reference.msp.label, price: formatPaise(p.reference.msp.price_paise_per_quintal) }));
   if (p.reference.mandi_modal) ref.push(t('buyer.mandi_line', { price: formatPaise(p.reference.mandi_modal.price_paise_per_quintal), label: p.reference.mandi_modal.label, date: formatDate(p.reference.mandi_modal.as_of) }));

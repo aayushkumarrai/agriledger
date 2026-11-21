@@ -3,7 +3,7 @@ import { startPage } from '../layout.js';
 import { t } from '../i18n.js';
 import { api } from '../api.js';
 import { h, clear, debounce, append } from '../dom.js';
-import { skeleton, errorState, emptyState, unitToggle, onUnitChange, breadcrumb, field, selectWrap, poolCode } from '../components.js';
+import { skeleton, errorState, emptyState, unitToggle, onUnitChange, breadcrumb, field, selectWrap, poolCode, button } from '../components.js';
 import { statementView, statementSubtitle } from '../statement.js';
 
 let me; let poolId = new URLSearchParams(location.search).get('pool'); let list = []; let data = null;
@@ -20,9 +20,10 @@ function paint() {
   clear(body).append(
     h('div', { class: 'stack' },
       breadcrumb([{ label: t('nav.my_pools'), href: '/farmer/pools.html' }, { label: poolCode(data.pool_id) }]),
-      h('div', { class: 'page-head' }, h('h1', {}, `${data.commodity} · ${data.variety} · ${t('pool.range', { n: data.range_no })}`), h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle())),
+      h('div', { class: 'page-head' }, h('h1', {}, t('statement.title', { name: data.farmer_name })), h('div', { class: 'row no-print' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle(), button(t('statement.print'), { onclick: () => window.print() }))),
+      h('p', { class: 'muted' }, `${poolCode(data.pool_id)} · ${data.commodity} · ${data.variety} · ${t('pool.range', { n: data.range_no })}`),
       h('div', { class: 'row' }, statementSubtitle(data))),
-    view.tiles, view.table);
+    view.tiles, view.table, view.changes);
 }
 
 async function loadStatement(quiet = false) {

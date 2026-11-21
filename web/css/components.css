@@ -221,3 +221,14 @@
 .swatch--clay .swatch__color { background: var(--clay); }
 .sg-state { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s2); }
 .grid--auto { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); align-items: start; }
+
+/* a plain list of dated lines (price history, changes to a pool) */
+.plain-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s2); }
+
+/* printing a statement: only the statement itself, no menus or buttons */
+@media print {
+  .topbar, .no-print, .toast-region, .live-note, .breadcrumb { display: none !important; }
+  body { background: none; }
+  .card, .tile { break-inside: avoid; }
+  .card--table { border-color: var(--ink); }
+}

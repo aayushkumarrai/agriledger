@@ -232,6 +232,8 @@ json Engine::list_pools(const Viewer& v) {
     return out;
 }
 
+static json price_and_status_changes(pqxx::transaction_base& tx, i64 pool_id, int limit);
+
 json Engine::pool_detail(i64 pool_id, const Viewer& v) {
     ReadTx rt(*impl_);
     const pqxx::result r = rt.tx.exec_params(std::string(kPoolSelect) + "WHERE p.pool_id = $1", pool_id);
@@ -267,6 +269,12 @@ json Engine::pool_detail(i64 pool_id, const Viewer& v) {
             {{"price_paise_per_quintal", p["price_paise_per_quintal"].as<i64>()}, {"label", p["label"].as<std::string>()}, {"as_of", p["as_of"].as<std::string>()}};
 
     j["photos"] = photo_array(rt.tx, pool_id, v.role == Viewer::Role::Manager ? 100 : 3);
+    {   // price history is visible to everyone who can see the pool (status changes are not needed by buyers)
+        json history = json::array();
+        for (const auto& c : price_and_status_changes(rt.tx, pool_id, 50))
+            if (c["field"] == "PRICE") history.push_back(c);
+        j["price_history"] = history;
+    }
     j["records_ok"] = e1::check_invariants(load_pool_facts(rt.tx, pool_id, std::nullopt)).empty();   // status only for everyone
 
     const i64 deposited = rt.tx.exec_params1("SELECT coalesce(sum(quantity_g),0)::bigint FROM contribution WHERE pool_id = $1", pool_id)[0].as<i64>();
@@ -378,6 +386,15 @@ json Engine::my_pools(i64 farmer_id) {
     return out;
 }
 
+// Price and status changes of a pool, newest first: what changed, from what to what, and when.
+static json price_and_status_changes(pqxx::transaction_base& tx, i64 pool_id, int limit) {
+    json out = json::array();
+    for (const auto& c : tx.exec_params("SELECT c.field, c.old_value, c.new_value, " + secs("e.created_at") +
+                                        " AS at FROM pool_change c JOIN event e ON e.event_id = c.event_id WHERE c.pool_id = $1 ORDER BY c.change_id DESC LIMIT $2", pool_id, limit))
+        out.push_back({{"field", c["field"].as<std::string>()}, {"old_value", c["old_value"].as<std::string>()}, {"new_value", c["new_value"].as<std::string>()}, {"at", c["at"].as<std::string>()}});
+    return out;
+}
+
 json Engine::farmer_statement(i64 farmer_id, i64 pool_id) {
     ReadTx rt(*impl_);
     const pqxx::result p = rt.tx.exec_params(
@@ -389,7 +406,8 @@ json Engine::farmer_statement(i64 farmer_id, i64 pool_id) {
     if (bal.empty()) throw DomainError("NOT_FOUND", "this farmer has no share in the pool");
     const i64 left = bal[0][0].as<i64>();
 
-    json out = {{"pool_id", pool_id}, {"commodity", p[0]["commodity"].as<std::string>()}, {"variety", p[0]["variety"].as<std::string>()},
+    const std::string farmer_name = rt.tx.exec_params1("SELECT seller_name FROM seller WHERE seller_id = $1", farmer_id)[0].as<std::string>();
+    json out = {{"farmer_name", farmer_name}, {"pool_id", pool_id}, {"commodity", p[0]["commodity"].as<std::string>()}, {"variety", p[0]["variety"].as<std::string>()},
                 {"range_no", p[0]["range_no"].as<int>()}, {"status", p[0]["status"].as<std::string>()}, {"stock_g", stock},
                 {"price_paise_per_kg", p[0]["price_paise_per_kg"].as<i64>()}};
     const i64 deposited = rt.tx.exec_params1("SELECT coalesce(sum(quantity_g),0)::bigint FROM contribution WHERE pool_id = $1 AND seller_id = $2", pool_id, farmer_id)[0].as<i64>();
@@ -399,8 +417,9 @@ json Engine::farmer_statement(i64 farmer_id, i64 pool_id) {
     out["rows"] = json::array();
     for (const auto& a : rt.tx.exec_params(
              "SELECT e.event_type, " + secs("e.created_at") + " AS at, o.delta_g, o.resulting_balance_g, s.quantity_g AS sale_g, "
-             "s.unit_price_paise_per_kg AS unit_price, f.amount_paise "
+             "s.unit_price_paise_per_kg AS unit_price, s.sale_id, s.gross_paise, b.buyer_name, l.entry_hash, f.amount_paise "
              "FROM ownership_ledger o JOIN event e ON e.event_id = o.event_id LEFT JOIN sale s ON s.event_id = o.event_id "
+             "LEFT JOIN buyer b ON b.buyer_id = s.buyer_id LEFT JOIN ledger_entry l ON l.event_id = o.event_id "
              "LEFT JOIN financial_ledger f ON f.event_id = o.event_id AND f.seller_id = o.seller_id AND f.entry_type = 'SELLER_PAYOUT' "
              "WHERE o.pool_id = $1 AND o.seller_id = $2 ORDER BY o.own_id DESC", pool_id, farmer_id)) {
         const bool sale = a["event_type"].as<std::string>() == "SALE";
@@ -408,8 +427,16 @@ json Engine::farmer_statement(i64 farmer_id, i64 pool_id) {
                     {"left_g", a["resulting_balance_g"].as<i64>()}, {"paise", opt_i64(a["amount_paise"])},
                     {"pool_sale_g", opt_i64(a["sale_g"])}, {"unit_price_paise_per_kg", opt_i64(a["unit_price"])}};
         row["share_permille"] = sale ? json(permille(-a["delta_g"].as<i64>(), a["sale_g"].as<i64>())) : json(nullptr);   // this farmer's part of that sale
+        // the farmer sees who bought and the receipt; buyers never receive farmer names (the other direction stays closed)
+        char no[32];
+        if (sale) std::snprintf(no, sizeof no, "R-%04lld", static_cast<long long>(a["sale_id"].as<i64>()));
+        row["receipt_no"] = sale ? json(std::string(no)) : json(nullptr);
+        row["buyer_name"] = sale ? json(a["buyer_name"].as<std::string>()) : json(nullptr);
+        row["gross_paise"] = sale ? json(a["gross_paise"].as<i64>()) : json(nullptr);
+        row["seal"] = a["entry_hash"].is_null() ? json(nullptr) : json(a["entry_hash"].as<std::string>().substr(0, 8));   // first 8 hex digits of the record's hash
         out["rows"].push_back(std::move(row));
     }
+    out["changes"] = price_and_status_changes(rt.tx, pool_id, 20);
     return out;
 }
 

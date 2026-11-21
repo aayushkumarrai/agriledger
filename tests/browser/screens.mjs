@@ -280,8 +280,9 @@ async function farmer(data, vp) {
   await page.waitForURL(/statement\.html\?pool=/); await ready(page); await page.waitForSelector('.tile');
   tally(await review(page, stem('farmer-statement'), vp, { shots: { tiles: '.grid.cols-4', table: '.card--table' } }));
   const st = await page.textContent('main');
-  check(/These figures match the pool's records/.test(st) && /I deposited grain/.test(st) && /Sale of /.test(st), 'the statement lists deposits and sales and says the figures match');
-  check(!/Renukamma|Mallikarjun|Mahantesh/.test(st), 'the statement shows only this farmer');
+  check(/These figures match the pool's records/.test(st) && /I deposited grain/.test(st) && /Sold .* at .* per quintal\. My part: /.test(st), 'the statement lists deposits and sales and says the figures match');
+  check(/Bought by Mahantesh Traders · Receipt R-\d{4} · Seal [0-9A-F]{4} [0-9A-F]{4}/.test(st) && /Statement for Basavaraj Hiremath/.test(st), 'each sale shows the buyer, the receipt and the record seal; the title names the farmer');
+  check(!/Renukamma|Mallikarjun/.test(st), 'the statement shows only this farmer (no other farmer\'s name)');
   const unit0 = await page.locator('.tile .key-number').first().textContent();
   await page.click('.toggle__opt[data-unit="kg"]');
   check((await page.locator('.tile .key-number').first().textContent()) !== unit0, 'the unit toggle changes the statement');

@@ -30,7 +30,7 @@ async function show(quiet = false) {
 
 function paint() {
   const view = statementView(data);
-  clear(holder).append(h('div', { class: 'stack stack--loose' }, h('div', { class: 'row' }, statementSubtitle(data)), view.tiles, view.table));
+  clear(holder).append(h('div', { class: 'stack stack--loose' }, h('div', { class: 'row' }, statementSubtitle(data)), view.tiles, view.table, view.changes));
 }
 
 try {

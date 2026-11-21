@@ -33,9 +33,12 @@
 
 /* ---- buyer: pool cards and the pool screen ------------------------------------------------------------------------ */
 .pool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s6); align-items: stretch; }
-.pool-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.pool-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; position: relative; transition: border-color 0.12s ease-out; }
+.pool-card:hover { border-color: var(--rule-strong); }
+.pool-card .btn::after { content: ''; position: absolute; inset: 0; }   /* the whole card opens the pool; the button stays the real link */
+.pool-card .fig--right .fig__value { font-size: var(--fs-section); line-height: 1.3; }
 .pool-card .photo { border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; }
-.pool-card__body { flex: 1; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); }
+.pool-card__body { flex: 1; padding: var(--s6); display: flex; flex-direction: column; gap: var(--s3); }
 .pool-card__content { flex: 1; display: flex; flex-direction: column; gap: var(--s3); }
 .pool-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); }
 .pool-card__head .tag { flex: none; }
@@ -90,7 +93,7 @@ a.btn.is-disabled { pointer-events: none; }
 .page-head--tight { margin-bottom: 0; }
 .pool-code { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
 .key-number--xl { font-size: 44px; }
-.meter { height: 12px; border: 1px solid var(--field-border); border-radius: var(--radius-sm); background: var(--field); overflow: hidden; }
+.meter { height: 8px; border: 1px solid var(--rule); border-radius: var(--radius-sm); background: var(--field); overflow: hidden; }
 .meter__fill { height: 100%; width: 0; background: var(--leaf); }
 .photo-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); }
 .photo-row .photo { width: 100%; }

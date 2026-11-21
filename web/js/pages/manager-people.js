@@ -30,7 +30,7 @@ const holder = h('div', {});
 const addBtn = button(t('people.add_button'), { kind: 'primary', onclick: () => addPerson() });
 
 clear(body).append(
-  h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('p', { class: 'label' }, t('manager.eyebrow')), h('h1', {}, t('people.title'))), addBtn),
+  h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('h1', {}, t('people.title'))), addBtn),
   h('div', { class: 'page-head page-head--tools' }, h('div', { class: 'page-head__tools' }, wrap(typeFilter), wrap(statusFilter))), problem, holder);
 
 const statusTag = (u) => u.status === 'pending' ? tag('grey', t('status.pending'), 'clock') : u.status === 'active' ? tag('ok', t('status.active'))

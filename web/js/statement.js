@@ -18,10 +18,10 @@ export function statementView(data) {
   const tile = (labelKey, value, unitLabel, note) => h('div', { class: 'tile' }, h('p', { class: 'label' }, t(labelKey)),
     h('p', { class: 'tile__value' }, h('span', { class: 'key-number' }, value), unitLabel ? h('span', { class: 'key-unit' }, unitLabel) : null), note ? h('p', { class: 'small muted' }, note) : null);
   const tiles = h('div', { class: 'grid cols-4' },
+    tile('statement.paid', formatPaise(s.paid_paise), null),
     tile('statement.deposited', formatQuantity(s.deposited_g, unit), unitText),
     tile('statement.sold', formatQuantity(s.sold_g, unit), unitText),
-    tile('statement.left', formatQuantity(s.left_g, unit), unitText, t('statement.of_pool', { share: formatPermille(s.share_permille) })),
-    tile('statement.paid', formatPaise(s.paid_paise), null));
+    tile('statement.left', formatQuantity(s.left_g, unit), unitText, t('statement.of_pool', { share: formatPermille(s.share_permille) })));
 
   const L = { date: t('statement.date'), what: t('statement.what'), grain: t(`statement.grain_${unit}`), have: t('statement.have'), money: t('statement.money') };
   const grainCol = padColumn(data.rows.map((r) => signed(r.delta_g, unit)));   // figures in a column share one number of decimals

@@ -27,6 +27,10 @@
 .btn--secondary { background: transparent; border-color: var(--leaf); color: var(--leaf-text); }
 .btn--secondary:hover, .btn--secondary.is-hover { background: var(--leaf-tint); color: var(--leaf-text); }
 .btn--secondary:active, .btn--secondary.is-pressed { background: var(--leaf-edge); transform: translateY(1px); }
+.btn--ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.btn--ghost:hover, .btn--ghost.is-hover { background: var(--grey-tint); color: var(--ink); }
+.btn--ghost:active, .btn--ghost.is-pressed { background: var(--grey-edge); transform: translateY(1px); }
+.btn { white-space: nowrap; }
 .btn--block { width: 100%; }
 
 .btn:disabled, .btn[aria-disabled="true"], .btn.is-disabled {
@@ -37,7 +41,7 @@
 
 /* ---- fields ------------------------------------------------------------------------------------------------------- */
 .field { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
-.field__label { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.field__label { font-size: var(--fs-small); line-height: 1.4; font-weight: 500; color: var(--muted); }
 .field__hint { font-size: var(--fs-small); line-height: 1.45; color: var(--muted); }
 .field__error { display: flex; align-items: flex-start; gap: var(--s2); font-size: var(--fs-small); line-height: 1.45; color: var(--clay-text); }
 .field__error .icon { position: relative; top: 2px; }
@@ -172,7 +176,7 @@
 }
 
 /* ---- summary tiles, notes, empty / error / loading ---------------------------------------------------------------- */
-.tile { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--s5) var(--s6); display: flex; flex-direction: column; gap: var(--s2); }
+.tile { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: var(--s6); display: flex; flex-direction: column; gap: var(--s2); }
 .tile__value { display: flex; align-items: baseline; gap: var(--s2); }
 
 .notice { display: flex; align-items: flex-start; gap: var(--s2); padding: var(--s3) var(--s4); border: 1px solid; border-radius: var(--radius); font-size: var(--fs-small); line-height: 1.45; }

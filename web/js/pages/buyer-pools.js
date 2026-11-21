@@ -23,7 +23,7 @@ function card(pool) {
   const stock = h('span', { class: 'fig__value' });
   const stockUnit = h('span', { class: 'key-unit' });
   const meta = h('p', { class: 'small muted' });
-  const action = h('a', { class: 'btn btn--primary btn--block', href: `/buyer/pool.html?id=${pool.pool_id}` }, t('buyer.view_and_buy'));
+  const action = h('a', { class: 'btn btn--secondary btn--block', href: `/buyer/pool.html?id=${pool.pool_id}` }, t('buyer.view_and_buy'));
   const root = h('article', { class: 'card pool-card', dataset: { pool: pool.pool_id } }, photo,
     h('div', { class: 'pool-card__body' },
       h('div', { class: 'pool-card__content' },
@@ -113,7 +113,7 @@ grid = h('div', { class: 'pool-grid', id: 'pool-grid' }, skeleton(), skeleton(),
 
 append(main, [
   h('div', { class: 'page-head' },
-    h('div', { class: 'stack stack--tight' }, h('p', { class: 'label' }, t('buyer.eyebrow')), h('h1', {}, t('buyer.pools_title'))),
+    h('div', { class: 'stack stack--tight' }, h('h1', {}, t('buyer.pools_title'))),
     h('div', { class: 'page-head__tools' }, h('div', { class: 'select-wrap tool-select' }, filterSelect, icon('chevron-down')), marketWrap, h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle()))),
   grid, h('div', { class: 'row row--between' }, note, h('span', {})),
 ]);

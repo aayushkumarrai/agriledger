@@ -18,6 +18,6 @@ Setup: `scripts/seed_demo.sh`, then `scripts/run_server.sh`, then open http://lo
 7. **Manager tools (`manager`).** Create a pool (draft, photo, market, Open for sale), record a farmer's deposit, change a price, close and reopen a pool.
 8. **Tamper and prove it.** In a terminal:
    `docker compose exec db psql -U postgres -d agriledger -c "SET session_replication_role = replica; UPDATE financial_ledger SET amount_paise = amount_paise + 1 WHERE ctid = (SELECT ctid FROM financial_ledger WHERE entry_type = 'SELLER_PAYOUT' LIMIT 1);"`
-   Back as the Manager, open that pool and press **Verify integrity**: it says which record no longer matches, and the Pools list badge turns red with words.
+   Back as the Manager, open that pool and press **Check records**: it says which record no longer matches, and the Pools list badge turns red with words.
 
 Talking points: integers only (grams, paise); append-only ledgers; every sale is one database transaction behind a per-pool queue; roles are checked on the server.

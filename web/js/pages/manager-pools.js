@@ -23,7 +23,7 @@ statusFilter = h('select', { class: 'select', 'aria-label': t('manager.status_la
 const wrap = (select) => h('div', { class: 'select-wrap tool-select' }, select, icon('chevron-down'));
 append(main, [
   h('div', { class: 'page-head' },
-    h('div', { class: 'stack stack--tight' }, h('p', { class: 'label' }, t('manager.eyebrow')), h('h1', {}, t('nav.pools'))),
+    h('div', { class: 'stack stack--tight' }, h('h1', {}, t('nav.pools'))),
     h('a', { class: 'btn btn--primary', href: '/manager/create.html' }, icon('plus'), h('span', {}, t('manager.create_pool')))),
   h('div', { class: 'page-head page-head--tools' }, h('div', { class: 'page-head__tools' }, wrap(commodityFilter), wrap(statusFilter)),
     h('div', { class: 'row' }, h('span', { class: 'muted' }, t('manager.show_stock_in')), unitToggle())),

@@ -1,6 +1,6 @@
 /* Design tokens (spec §8.1). The only place colours, type sizes and the spacing scale are defined. */
 :root {
-  --paper: #F4EEDF;  --card: #FBF7EC;  --rule: #D8CDB4;  --field: #FFFDF6;  --field-border: #BFB293;
+  --paper: #F4EEDF;  --card: #FBF7EC;  --rule: #D8CDB4;  --field: #FFFDF6;  --rule-strong: #8A7C60;  --field-border: var(--rule-strong);   /* field, toggle and checkbox edges: 3.8:1 on the card (WCAG 1.4.11) */
   --ink: #2C2418;    --muted: #6B5D45;
   --leaf: #3B5B2E;   --leaf-tint: #E3E9D6;  --leaf-text: #2F4A24;  --leaf-edge: #B9C79F;   /* the ONE accent */
   --clay: #9C3F2A;   --clay-tint: #F1DDD3;  --clay-text: #8A3623;  --clay-edge: #DDB3A4;   /* errors and mismatches only */

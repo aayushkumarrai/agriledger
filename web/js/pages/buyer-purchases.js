@@ -13,7 +13,7 @@ const { main, note } = await startPage({
   role: 'buyer', active: 'purchases', titleKey: 'pages.buyer_purchases', onResync: () => load(true), liveHandlers: { my_purchase: refresh },
 });
 append(main, [
-  h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('p', { class: 'label' }, t('buyer.eyebrow')), h('h1', {}, t('buyer.purchases_title'))), h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle())),
+  h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('h1', {}, t('buyer.purchases_title'))), h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle())),
   holder, h('div', { class: 'row row--between' }, note, h('span', {}))]);
 
 function table(rows) {

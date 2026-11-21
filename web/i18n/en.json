@@ -309,7 +309,6 @@
     "same": "Choose a different password."
   },
   "buyer": {
-    "eyebrow": "Buyer home",
     "pools_title": "Available pools",
     "purchases_title": "My purchases",
     "all_commodities": "All commodities",
@@ -395,7 +394,6 @@
     }
   },
   "farmer": {
-    "eyebrow": "Farmer home",
     "pools_title": "My pools",
     "my_share": "My share",
     "grain_left": "My grain left",
@@ -446,7 +444,6 @@
     "record": "record"
   },
   "manager": {
-    "eyebrow": "Pool Manager home",
     "create_pool": "Create pool",
     "create_pool_title": "Create pool",
     "new_pool": "New pool",
@@ -486,8 +483,8 @@
     "records_check": "Records check",
     "records_ok_sale": "Stock, ownership and money totals agree after the latest sale ({when}).",
     "records_ok": "Stock, ownership and money totals agree.",
-    "records_bad": "The totals do not match. Use Verify integrity to see which record is affected.",
-    "verify": "Verify integrity",
+    "records_bad": "The totals do not match. Use Check records to see which record is affected.",
+    "verify": "Check records",
     "integrity_ok": "All {n} records match.",
     "integrity_mismatch": "Record {n} ({what}) does not match.",
     "integrity_order": "Record {n} ({what}) is out of order or missing.",
@@ -553,7 +550,7 @@
     "review": "Review",
     "sale_line": "{qty} at {price} per quintal",
     "sale_hint": "Available: {stock} · minimum order {min}",
-    "review_confirm": "Review and confirm",
+    "review_confirm": "Review order",
     "sale_none": "A sale needs an open pool with stock and a buyer account.",
     "accounts": "Accounts",
     "account_title": "Create an account",
@@ -583,7 +580,9 @@
     "draft_saved_note": "Saved as a draft. Its details are locked here; you can change the price later.",
     "market": "Market",
     "market_placeholder": "For example, Hubballi APMC",
-    "err_not_approved": "This person has not been verified yet."
+    "err_not_approved": "This person has not been verified yet.",
+    "checked_at": "Checked {time}",
+    "seal": "Seal {seal}"
   },
   "signup": {
     "title": "Create your account",

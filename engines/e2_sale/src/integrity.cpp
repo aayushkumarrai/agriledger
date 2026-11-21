@@ -80,6 +80,7 @@ IntegrityResult Engine::integrity_check(i64 pool_id) {
         out.ok = false;
         out.first_broken = IntegrityBreak{seq, type, "INVARIANT"};
     }
+    out.head_hash = chain.empty() ? std::string() : chain.back().entry_hash;
     return out;
 }
 

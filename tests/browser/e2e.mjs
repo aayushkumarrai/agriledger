@@ -3,7 +3,7 @@
 //  2. two buyers, in two separate browser windows, race for the last stock: exactly one wins
 //  3. the price changes while a buyer has the confirmation open
 //  4. a double tap sends one purchase only
-//  5. a stored row is tampered with, and Verify integrity names the record
+//  5. a stored row is tampered with, and Check records names the record
 // Desktop (1200 px) and an Android phone (390 px) both run the whole story.
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -89,17 +89,17 @@ async function story(vp) {
   await sleep(300);
   check(posts === 1, `4. a double tap sent ${posts} purchase request(s)`);
 
-  // 5. tamper, then Verify integrity
-  await mgr.page.goto(`${base}/manager/pool.html?id=${racePool}`); await ready(mgr.page); await mgr.page.waitForSelector('button:has-text("Verify integrity")');
-  await mgr.page.click('button:has-text("Verify integrity")');
+  // 5. tamper, then Check records
+  await mgr.page.goto(`${base}/manager/pool.html?id=${racePool}`); await ready(mgr.page); await mgr.page.waitForSelector('button:has-text("Check records")');
+  await mgr.page.click('button:has-text("Check records")');
   await mgr.page.waitForSelector('text=/All \\d+ records match/');
   check(true, '5. before tampering: all records match');
   sql(`SET session_replication_role = replica; UPDATE financial_ledger SET amount_paise = amount_paise + 1 WHERE ctid = (SELECT ctid FROM financial_ledger WHERE pool_id = ${racePool} AND entry_type = 'SELLER_PAYOUT' LIMIT 1);`);
-  await mgr.page.reload(); await ready(mgr.page); await mgr.page.waitForSelector('button:has-text("Verify integrity")');
-  await mgr.page.click('button:has-text("Verify integrity")');
+  await mgr.page.reload(); await ready(mgr.page); await mgr.page.waitForSelector('button:has-text("Check records")');
+  await mgr.page.click('button:has-text("Check records")');
   await mgr.page.waitForSelector('text=/does not match/', { timeout: 15000 });
   const said = await mgr.page.textContent('main');
-  check(/Record \d+ \(.+\) does not match/.test(said) && !/INV-|HASH|CHAIN|500/.test(said), '5. after tampering: Verify integrity names the record in plain words');
+  check(/Record \d+ \(.+\) does not match/.test(said) && !/INV-|HASH|CHAIN|500/.test(said), '5. after tampering: Check records names the record in plain words');
   for (const x of [mgr, a, b]) await x.context.close();
 }
 

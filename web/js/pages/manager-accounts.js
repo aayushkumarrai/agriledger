@@ -143,7 +143,7 @@ async function loadAll(quiet = false) {
     // a redraw (after saving, or on a live event) must never wipe what the Manager is typing in another form
     const keep = [...body.querySelectorAll('input[id], select[id]')].map((el) => [el.id, el.type === 'checkbox' ? el.checked : el.value]);
     clear(body).append(
-      h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('p', { class: 'label' }, t('manager.eyebrow')), h('h1', {}, t('manager.forms_title'))), h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle())),
+      h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('h1', {}, t('manager.forms_title'))), h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle())),
       h('div', { class: 'grid cols-2 grid--forms' }, depositCard(), saleCard()));
     for (const [elId, value] of keep) {
       const el = document.getElementById(elId);

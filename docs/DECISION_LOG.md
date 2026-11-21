@@ -107,3 +107,10 @@ See spec §6 (full table with request/response shapes).
 - Pools have a Market (APMC) field; buyers can filter by it when there is more than one market. Several managers per market is out of scope.
 - Not built: Google sign-in and mobile OTP (need outside services and SMS, out of scope).
 - Schema change (approved by the user, 21 Nov): app_user (phone, public_code, approval_status, id_doc_type, id_last4, verified_by, verified_at), pool.market. Existing databases need `docker compose down -v` and a re-seed.
+
+## P. Visual polish round, 21-22 Nov (from the design critique; user approved the new token, sentence-case labels and no eyebrows)
+- New token `--rule-strong #8A7C60` (3.8:1 on the card) for field, toggle and checkbox edges; the card rule colour stays for containers.
+- Form and card labels are sentence case; capitals are kept for table headers only. Eyebrow lines above page titles are removed.
+- Units are small muted sans. The buyer list button is outline and the whole card opens the pool; availability is smaller than price. "Log out" and "Close pool" are ghost buttons. The stock bar is thinner. Statement shows "Paid to me" first.
+- "Verify integrity" is now **Check records**; after a check the Records card shows when it was checked and a short seal (first and last four characters of the newest record's hash). The seal uses the existing sans with even digits: a monospace face would add a text style beyond the audited type scale.
+- Not adopted from the critique: 48 px spacing step, `--ink-2` and other extra tokens, In/Out ledger columns, wordmark change, clay-coloured "Close pool" (clay is for errors only).

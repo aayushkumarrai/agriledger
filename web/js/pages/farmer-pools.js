@@ -17,7 +17,7 @@ const { main, note } = await startPage({
   liveHandlers: { stock_changed: refresh, ledger_rows: refresh, price_changed: refresh, status_changed: refresh },
 });
 append(main, [
-  h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('p', { class: 'label' }, t('farmer.eyebrow')), h('h1', {}, t('farmer.pools_title'))),
+  h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('h1', {}, t('farmer.pools_title'))),
     h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle())),
   holder, h('div', { class: 'row row--between' }, note, h('span', {}))]);
 

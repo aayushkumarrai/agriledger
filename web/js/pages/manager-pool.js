@@ -54,7 +54,7 @@ function build() {
   const price = h('span', { class: 'key-number' });
   const priceLines = h('p', { class: 'small muted' });
   const minOrder = h('p', {});
-  const closeBtn = button('', { onclick: () => confirmStatus() });
+  const closeBtn = button('', { kind: 'ghost', onclick: () => confirmStatus() });
   const priceCard = h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('manager.price_rules')),
     h('p', {}, price, ' ', h('span', { class: 'key-unit' }, t('unit.per_quintal'))), priceLines, minOrder,
     h('div', { class: 'row' }, button(t('manager.change_price'), { onclick: changePrice }), closeBtn));
@@ -260,7 +260,8 @@ async function runVerify(btn) {
   const out = refs.verifyResult;
   try {
     const r = await busy(btn, () => api.post(`/pools/${id}/integrity-check`));
-    clear(out).append(r.ok ? tag('ok', t('manager.integrity_ok', { n: r.checked_entries }), 'check') : h('p', { class: 'notice notice--bad' }, icon('cross'), h('span', {}, integritySentence(r.first_broken))));
+    clear(out).append(r.ok ? h('div', { class: 'stack stack--tight' }, tag('ok', t('manager.integrity_ok', { n: r.checked_entries }), 'check'),
+      h('p', { class: 'small muted' }, `${t('manager.checked_at', { time: formatDateTime(new Date().toISOString().slice(0, 19) + 'Z') })} · `, r.head_hash ? h('span', { class: 'mono' }, t('manager.seal', { seal: `${r.head_hash.slice(0, 4)}…${r.head_hash.slice(-4)}` })) : null)) : h('p', { class: 'notice notice--bad' }, icon('cross'), h('span', {}, integritySentence(r.first_broken))));
   } catch (err) {
     clear(out).append(h('p', { class: 'notice notice--bad' }, icon('cross'), h('span', {}, managerError(err))));
   }

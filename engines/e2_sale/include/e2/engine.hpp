@@ -146,6 +146,7 @@ struct IntegrityBreak {
 struct IntegrityResult {
     bool ok = true;
     std::size_t checked_entries = 0;
+    std::string head_hash;                  // the newest entry's hash when the whole chain checked out: the pool's "seal"
     std::optional<IntegrityBreak> first_broken;
 };
 

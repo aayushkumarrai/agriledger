@@ -48,11 +48,11 @@ const make = async (spec, colours, deposits) => {
 };
 // the main demo pool: paddy, Sona Masuri, Range 1, Rs 2,500 per quintal, 600 + 800 + 600 kg
 const main = await make({ commodity: 'Paddy', variety: 'Sona Masuri', range: 1, packaging: '50 kg jute bags', storage: 'Navalgund godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: 2500 }, [[196, 160, 78], [176, 142, 70]], [['farmer.a', 600000], ['farmer.b', 800000], ['farmer.c', 600000]]);
-const second = await make({ commodity: 'Groundnut with pods', variety: 'JL-24', range: 2, packaging: '40 kg gunny bags', storage: 'Annigeri godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: 6783 }, [[184, 132, 84]], [['farmer.a', 1000000], ['farmer.b', 1500000]]);
-const sold = await make({ commodity: 'Maize', variety: 'Pioneer 30V92', range: 1, packaging: '50 kg HDPE bags', storage: 'Hubballi APMC yard', market: 'Hubballi APMC', min: 200000, price: 2090 }, [[214, 178, 80]], [['farmer.b', 500000]]);
+const second = await make({ commodity: 'Groundnut with pods', variety: 'JL-24', range: 2, packaging: '40 kg gunny bags', storage: 'Annigeri godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: 6783 }, [[184, 132, 84]], [['farmer.a', 1125500], ['farmer.b', 1462000]]);
+const sold = await make({ commodity: 'Maize', variety: 'Pioneer 30V92', range: 1, packaging: '50 kg HDPE bags', storage: 'Hubballi APMC yard', market: 'Hubballi APMC', min: 200000, price: 2090 }, [[214, 178, 80]], [['farmer.b', 520500]]);
 const b = new Api(base);
 await b.login('buyer.1', DEMO_PASSWORD);
-await b.post(`/pools/${sold}/sales`, { request_id: randomUUID(), quantity_g: 500000, confirmed_price_paise_per_kg: 2090 });   // sells out
+await b.post(`/pools/${sold}/sales`, { request_id: randomUUID(), quantity_g: 520500, confirmed_price_paise_per_kg: 2090 });   // sells out
 // one real sign-up waiting for the Manager's approval (shows the People page and the pending state)
 await new Api(base).post('/auth/signup', { type: 'FARMER', name: 'Shivappa Naik', phone: '9845000006', id_doc_type: 'LAND_RECORD', id_last4: '4821', password: DEMO_PASSWORD });
 console.log(`Demo data ready: P-${main} (paddy, open, 2,000 kg), P-${second} (groundnut, open), P-${sold} (maize, sold out).`);

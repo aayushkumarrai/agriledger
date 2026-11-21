@@ -45,11 +45,12 @@ a:hover { color: var(--ink); }
 }
 
 /* type roles */
-.label { font-size: var(--fs-label); line-height: 1.4; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.label { font-size: var(--fs-small); line-height: 1.4; font-weight: 500; color: var(--muted); }   /* sentence case; capitals are kept for table headers only */
 .small { font-size: var(--fs-small); line-height: 1.45; }
 .muted { color: var(--muted); }
 .key-number { font-family: var(--font-head); font-weight: 700; font-size: var(--fs-key); line-height: 1.1; color: var(--ink); }
-.key-unit { font-family: var(--font-head); font-weight: 400; font-size: var(--fs-body); color: var(--muted); }
+.key-unit { font-family: var(--font-body); font-weight: 400; font-size: var(--fs-small); color: var(--muted); }
+.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }   /* the seal: same sans, evenly spaced digits (no extra typeface) */
 .num { font-variant-numeric: tabular-nums; text-align: right; }   /* numbers in tables are right-aligned */
 
 /* page frame: 32 px side padding, 16 px on a phone (spec §8.2 rule 4) */

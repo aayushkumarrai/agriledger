@@ -422,6 +422,7 @@ struct Server::Impl {
             return guarded(req, kManager, [&](const Principal&) {
                 const e2::IntegrityResult r = engine.integrity_check(id);
                 json j = {{"ok", r.ok}, {"checked_entries", r.checked_entries}};
+                if (r.ok) j["head_hash"] = r.head_hash;
                 if (r.first_broken)
                     j["first_broken"] = {{"sequence_no", r.first_broken->sequence_no}, {"event_type", r.first_broken->event_type}, {"reason", r.first_broken->reason}};
                 return json_response(200, j);

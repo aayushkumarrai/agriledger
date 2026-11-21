@@ -283,9 +283,9 @@ async function farmer(data, vp) {
   check(/These figures match the pool's records/.test(st) && /I deposited grain/.test(st) && /Sold .* at .* per quintal\. My part: /.test(st), 'the statement lists deposits and sales and says the figures match');
   check(/Bought by Mahantesh Traders · Receipt R-\d{4} · Seal [0-9A-F]{4} [0-9A-F]{4}/.test(st) && /Statement for Basavaraj Hiremath/.test(st), 'each sale shows the buyer, the receipt and the record seal; the title names the farmer');
   check(!/Renukamma|Mallikarjun/.test(st), 'the statement shows only this farmer (no other farmer\'s name)');
-  const unit0 = await page.locator('.tile .key-number').first().textContent();
+  const unit0 = await page.locator('.tile .key-number').nth(1).textContent();
   await page.click('.toggle__opt[data-unit="kg"]');
-  check((await page.locator('.tile .key-number').first().textContent()) !== unit0, 'the unit toggle changes the statement');
+  check((await page.locator('.tile .key-number').nth(1).textContent()) !== unit0, 'the unit toggle changes the statement');
   await page.click('.toggle__opt[data-unit="quintal"]');
 
   page.allowedStatuses = [500];
@@ -354,7 +354,7 @@ async function manager(data, vp) {
   await data.managerApi.patch(`/pools/${data.pools.paddy}`, { price_paise_per_kg: 2500 });   // put it back for the other roles
 
   // verify integrity
-  await page.click('button:has-text("Verify integrity")');
+  await page.click('button:has-text("Check records")');
   await page.waitForSelector('text=/All \\d+ records match/');
   tally(await review(page, stem('manager-verified'), vp, { allowManyPrimary: true, skipGrey: true, shots: { cards: '.grid.cols-3' } }));
 
@@ -435,7 +435,7 @@ async function manager(data, vp) {
   await page.selectOption('#sale-pool', await page.locator('#sale-pool option', { hasText: 'JL-24' }).getAttribute('value'));
   await page.fill('#sale-qty', '1');
   await page.waitForSelector('#sale-total');
-  await page.click('button:has-text("Review and confirm")');
+  await page.click('button:has-text("Review order")');
   await page.waitForSelector('.modal');
   await page.click('.modal button.btn--primary');
   await page.waitForSelector('.modal :text("Purchase complete")');

@@ -400,6 +400,9 @@ async function manager(data, vp) {
   await page.click('.toggle__opt:has-text("Grade 2")');
   await page.fill('#price', '2,090.50'); await page.fill('#min-order', '2'); await page.fill('#packaging', '50 kg HDPE bags'); await page.fill('#storage', 'Hubballi APMC yard');
   await page.click('button:has-text("Save as draft")');
+  await page.waitForSelector('#market-error:not([hidden])');
+  check(/required/.test(await page.textContent('#market-error')), 'the market is required');
+  await page.fill('#market', 'Hubballi APMC');
   await page.waitForSelector('#price-error:not([hidden])');
   check(/whole rupees/.test(await page.textContent('#price-error')), 'create pool refuses a decimal price');
   tally(await review(page, stem('manager-create-errors'), vp, { allowManyPrimary: true, skipGrey: true }));
@@ -428,19 +431,6 @@ async function manager(data, vp) {
   await page.fill('#dep-qty', '0'); await page.check('#dep-tested'); await page.click('button:has-text("Save deposit")');
   await page.waitForSelector('#dep-qty-error:not([hidden])');
 
-  const user = `new.buyer${vp.label}.${data.unique}`;
-  await page.fill('#acc-name', 'Gangadhar Patil'); await page.fill('#acc-user', 'Bad Name'); await page.click('button:has-text("Create account")');
-  await page.waitForSelector('#acc-user-error:not([hidden])');
-  await page.fill('#acc-user', user); await page.click('.toggle__opt:has-text("Buyer")'); await page.click('button:has-text("Create account")');
-  await page.waitForSelector('#form-account .notice--grey:not([hidden])');
-  await page.waitForSelector('#accounts :text("Gangadhar Patil")');   // the page has redrawn with the new account
-  check(/Account created for Gangadhar Patil/.test(await page.textContent('#form-account')) && /Waiting for first login/.test(await page.textContent('#accounts')), 'the account is created and waits for first login');
-  page.allowedStatuses = [409];   // the duplicate username is an expected refusal
-  await page.fill('#acc-name', 'Someone Else'); await page.fill('#acc-user', user); await page.click('button:has-text("Create account")');
-  await page.waitForSelector('#form-account .notice--bad:not([hidden])');
-  check(/already taken/.test(await page.textContent('#form-account')), 'a duplicate username is refused in plain words');
-  tally(await review(page, stem('manager-accounts-done'), vp, { allowManyPrimary: true, skipGrey: true, shots: { accounts: '#form-account' } }));
-  page.allowedStatuses = [];
 
   await page.selectOption('#sale-pool', await page.locator('#sale-pool option', { hasText: 'JL-24' }).getAttribute('value'));
   await page.fill('#sale-qty', '1');
@@ -466,7 +456,118 @@ async function manager(data, vp) {
   await context.close();
 }
 
-const scenarios = { login, buyer, farmer, manager };
+// ---- sign-up, pending accounts and the People page ------------------------------------------------------------------------
+async function people(data, vp) {
+  const stem = (n) => `${n}-${vp.label}`;
+  const digits = (Date.now() + (vp.label === '390' ? 7 : 0)).toString().slice(-8);
+  const farmerPhone = `98${digits.slice(0, 8)}`, buyerPhone = `97${digits.slice(0, 8)}`;
+  // the login page offers sign-up
+  const anon = await newPage(browser, base, vp);
+  anon.page.allowedStatuses = [409];
+  await anon.page.goto(`${base}/login.html`); await ready(anon.page);
+  check(/New here\?/.test(await anon.page.textContent('main')), 'the login page offers sign up');
+  await anon.page.click('a:has-text("Sign up")');
+  await anon.page.waitForURL(/signup\.html/); await ready(anon.page); await anon.page.waitForSelector('#phone');
+  tally(await review(anon.page, stem('signup'), vp, { shots: { form: '.auth-card' } }));
+  check((await anon.page.locator('#doc option').allTextContents()).join('|') === 'APMC farmer registration|Land record (RTC)|Aadhaar', 'a farmer chooses from farmer documents');
+  await anon.page.click('.toggle__opt:has-text("Buyer")');
+  check((await anon.page.locator('#doc option').allTextContents()).join('|') === 'APMC trade licence|GST registration|PAN', 'a buyer chooses from trade documents');
+  await anon.page.click('.toggle__opt:has-text("Farmer")');
+  await anon.page.click('button[type=submit]');
+  await anon.page.waitForSelector('#phone-error:not([hidden])');
+  tally(await review(anon.page, stem('signup-errors'), vp, { skipGrey: true }));
+  check(/10-digit mobile number/.test(await anon.page.textContent('#phone-error')) && /full name/.test(await anon.page.textContent('#name-error')), 'sign-up errors are plain sentences');
+  await anon.page.fill('#name', 'Shankar Gouda'); await anon.page.fill('#phone', data.farmers[0].username === farmerPhone ? '9000000009' : farmerPhone);
+  await anon.page.selectOption('#doc', 'LAND_RECORD'); await anon.page.fill('#last4', '4821');
+  await anon.page.fill('#password', PASS); await anon.page.fill('#repeat-password', PASS);
+  await anon.page.click('button[type=submit]');
+  await anon.page.waitForURL(/farmer\/pools\.html/, { timeout: 15000 }); await ready(anon.page);
+  check(/Waiting for the Pool Manager to verify you\./.test(await anon.page.textContent('body')), 'a new farmer sees that they are waiting to be verified');
+  check(/Farmer · Shankar Gouda · F-\d{4}/.test(await anon.page.textContent('.topbar')), 'the top bar shows the generated ID');
+  tally(await review(anon.page, stem('signup-pending-farmer'), vp, { skipGrey: true }));
+  // a second sign-up with the same mobile number is refused in plain words
+  const dup = await newPage(browser, base, vp); dup.page.allowedStatuses = [409];
+  await dup.page.goto(`${base}/signup.html`); await ready(dup.page);
+  await dup.page.fill('#name', 'Someone Else'); await dup.page.fill('#phone', farmerPhone); await dup.page.fill('#last4', '1111');
+  await dup.page.fill('#password', PASS); await dup.page.fill('#repeat-password', PASS); await dup.page.click('button[type=submit]');
+  await dup.page.waitForSelector('#phone-error:not([hidden])');
+  check(/already registered/.test(await dup.page.textContent('#phone-error')), 'a duplicate mobile number is refused');
+  await dup.context.close();
+  await anon.context.close();
+
+  // a pending buyer can look at pools but the purchase is refused in plain words
+  const bb = await newPage(browser, base, vp); bb.page.allowedStatuses = [409];
+  await bb.page.goto(`${base}/signup.html`); await ready(bb.page);
+  await bb.page.click('.toggle__opt:has-text("Buyer")');
+  await bb.page.fill('#name', 'Sunita Traders'); await bb.page.fill('#phone', buyerPhone); await bb.page.selectOption('#doc', 'GST'); await bb.page.fill('#last4', '1Z5K');
+  await bb.page.fill('#password', PASS); await bb.page.fill('#repeat-password', PASS); await bb.page.click('button[type=submit]');
+  await bb.page.waitForURL(/buyer\/pools\.html/, { timeout: 15000 }); await ready(bb.page); await bb.page.waitForSelector('.pool-card');
+  await bb.page.goto(`${base}/buyer/pool.html?id=${data.pools.paddy}`); await ready(bb.page); await bb.page.waitForSelector('#quantity');
+  await bb.page.fill('#quantity', '1'); await bb.page.click('button:has-text("Review order")'); await bb.page.waitForSelector('.modal');
+  await bb.page.click('.modal button.btn--primary');
+  await bb.page.waitForSelector('.modal :text("Your account is waiting to be verified.")');
+  check(!/BUYER_NOT_APPROVED|409/.test(await bb.page.textContent('.modal')), 'the refusal shows no code');
+  tally(await review(bb.page, stem('signup-pending-buyer-refused'), vp, { allowManyPrimary: true, skipGrey: true, shots: { modal: '.modal' } }));
+  await bb.context.close();
+
+  // the Pool Manager's People page
+  const { context, page } = await newPage(browser, base, vp);
+  page.allowedStatuses = [409];
+  await uiLogin(page, data.manager.username);
+  await page.waitForURL(/manager\/pools\.html/); await ready(page);
+  await page.click(vp.phone ? '.topbar__menu' : 'a:has-text("People")').catch(() => {});
+  await page.goto(`${base}/manager/people.html`); await ready(page); await page.waitForSelector('table, .state');
+  tally(await review(page, stem('people'), vp, { allowManyPrimary: true, shots: { list: '.card--table' } }));
+  const text = await page.textContent('main');
+  check(/Shankar Gouda/.test(text) && /Sunita Traders/.test(text) && /Pending verification/.test(text), 'pending sign-ups appear in the list');
+  check(/F-\d{4}/.test(text) && new RegExp(farmerPhone).test(text) && /Land record \(RTC\) ending 4821/.test(text), 'the list shows ID, mobile number and the document with its last four characters');
+  check(!/Waiting for the Pool Manager/.test(text), 'the Manager sees no pending banner');
+  await page.selectOption('select[aria-label="Status"]', 'pending');
+  check(!/Basavaraj/.test(await page.textContent('main')) && /Shankar/.test(await page.textContent('main')), 'the status filter shows only pending people');
+  await page.selectOption('select[aria-label="Status"]', '');
+  await page.goto(`${base}/manager/accounts.html`); await ready(page); await page.waitForSelector('#form-deposit');
+  check(!/Shankar Gouda/.test(await page.locator('#dep-farmer').innerHTML()), 'the deposit form does not offer a farmer who is still pending');
+  await page.goto(`${base}/manager/people.html`); await ready(page); await page.waitForSelector('table');
+  const row = (name) => page.locator('tbody tr', { hasText: name });
+  await row('Shankar Gouda').locator('button:has-text("Approve")').click();
+  await page.waitForSelector('tbody tr:has-text("Shankar Gouda"):has-text("Active")');
+  check(/Checked by .* on /.test(await row('Shankar Gouda').textContent()), 'approval records who checked the document and when');
+  await row('Shankar Gouda').locator('button:has-text("Edit")').click(); await page.waitForSelector('.modal #p-name');
+  tally(await review(page, stem('people-edit'), vp, { allowManyPrimary: true, skipGrey: true, shots: { modal: '.modal' } }));
+  await page.fill('#p-name', 'Shankar Gowda'); await page.click('.modal button.btn--primary');
+  await page.waitForSelector('.modal', { state: 'detached' }); await page.waitForSelector('tbody tr:has-text("Shankar Gowda")');
+  await row('Shankar Gowda').locator('button:has-text("Deactivate")').click(); await page.waitForSelector('.modal');
+  tally(await review(page, stem('people-deactivate'), vp, { allowManyPrimary: true, skipGrey: true, shots: { modal: '.modal' } }));
+  await page.click('.modal button.btn--primary'); await page.waitForSelector('tbody tr:has-text("Shankar Gowda"):has-text("Inactive")');
+  await row('Shankar Gowda').locator('button:has-text("Reactivate")').click(); await page.waitForSelector('tbody tr:has-text("Shankar Gowda"):has-text("Active")');
+  // approve the buyer and add someone in person
+  await row('Sunita Traders').locator('button:has-text("Approve")').click(); await page.waitForSelector('tbody tr:has-text("Sunita Traders"):has-text("Active")');
+  await page.click('button:has-text("Add person")'); await page.waitForSelector('.modal #a-name');
+  await page.fill('#a-name', 'Lakshmi Bai'); await page.fill('#a-phone', '12345'); await page.click('.modal button:has-text("Create account")');
+  await page.waitForSelector('#a-phone-error:not([hidden])');
+  tally(await review(page, stem('people-add'), vp, { allowManyPrimary: true, skipGrey: true, shots: { modal: '.modal' } }));
+  await page.fill('#a-phone', `96${digits.slice(0, 8)}`); await page.click('.modal button:has-text("Create account")');
+  await page.waitForSelector('.modal :text("Account created for Lakshmi Bai")');
+  check(/temporary password/.test(await page.textContent('.modal')), 'the new account shows its temporary password once');
+  await page.click('.modal button:has-text("Done")'); await page.waitForSelector('tbody tr:has-text("Lakshmi Bai")');
+  // the Manager's forms list only verified people
+  await page.goto(`${base}/manager/accounts.html`); await ready(page); await page.waitForSelector('#form-deposit');
+  check(/Basavaraj/.test(await page.locator('#dep-farmer').innerHTML()) && /Shankar Gowda/.test(await page.locator('#dep-farmer').innerHTML()), 'the deposit form offers people who have been verified');
+  tally(await review(page, stem('forms-without-accounts'), vp, { allowManyPrimary: true, skipGrey: true }));
+  await context.close();
+
+  // the approved buyer can now buy
+  const ok = await newPage(browser, base, vp);
+  await uiLogin(ok.page, buyerPhone);
+  await ok.page.waitForURL(/buyer\/pools\.html/); await ready(ok.page);
+  check(!/Waiting for the Pool Manager/.test(await ok.page.textContent('body')), 'the banner is gone after approval');
+  await ok.page.goto(`${base}/buyer/pool.html?id=${data.pools.paddy}`); await ready(ok.page); await ok.page.waitForSelector('#quantity');
+  await ok.page.fill('#quantity', '1'); await ok.page.click('button:has-text("Review order")'); await ok.page.waitForSelector('.modal');
+  await ok.page.click('.modal button.btn--primary'); await ok.page.waitForSelector('.modal :text("Purchase complete")');
+  await ok.context.close();
+}
+
+const scenarios = { login, buyer, farmer, manager, people };
 try {
   const data = await seed(base, env);
   for (const [name, fn] of Object.entries(scenarios)) {

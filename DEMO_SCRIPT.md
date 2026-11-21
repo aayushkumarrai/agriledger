@@ -13,9 +13,10 @@ Setup: `scripts/seed_demo.sh`, then `scripts/run_server.sh`, then open http://lo
    "The price has changed", the old and new price and the new total, and nothing is bought until they confirm again.
 5. **Farmer view (`farmer.a`).** "My pools" shows share and remaining stock; "My statement" shows each deposit, sale and payout, split in proportion to what each farmer contributed
    (largest-remainder rounding, so the paise always add up exactly).
-6. **Manager tools (`manager`).** Create a pool (draft, photo, Open for sale), record a farmer's deposit, create a farmer or buyer account, change a price,
-   close and reopen a pool.
-7. **Tamper and prove it.** In a terminal:
+6. **Sign-up and People (`manager`).** Open **People**: Shivappa Naik signed up and waits as *Pending verification*, with an ID, a mobile number and the document
+   (type and last four characters only). Press **Approve**. Show Edit, Deactivate (records stay) and Add person. On the login page, **New here? Sign up** shows the same flow for a new person.
+7. **Manager tools (`manager`).** Create a pool (draft, photo, market, Open for sale), record a farmer's deposit, change a price, close and reopen a pool.
+8. **Tamper and prove it.** In a terminal:
    `docker compose exec db psql -U postgres -d agriledger -c "SET session_replication_role = replica; UPDATE financial_ledger SET amount_paise = amount_paise + 1 WHERE ctid = (SELECT ctid FROM financial_ledger WHERE entry_type = 'SELLER_PAYOUT' LIMIT 1);"`
    Back as the Manager, open that pool and press **Verify integrity**: it says which record no longer matches, and the Pools list badge turns red with words.
 

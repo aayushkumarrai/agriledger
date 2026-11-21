@@ -76,6 +76,8 @@ export function describeError(err, unit = 'quintal', order = null) {
     }
     case 'BELOW_MIN_ORDER':
       return { title: t('reason.BELOW_MIN_ORDER.title', { min: qty(toBigInt(d.min_order_g)) }), body: '', action: '' };
+    case 'BUYER_NOT_APPROVED':
+      return { title: t('reason.BUYER_NOT_APPROVED.title'), body: '', action: '' };
     case 'POOL_NOT_OPEN':
       return { title: t('reason.POOL_NOT_OPEN.title'), body: '', action: '' };
     case 'BUSY':

@@ -23,10 +23,11 @@ function build() {
   const price = field({ id: 'price', label: t('manager.price_field'), input: h('input', { type: 'text', inputmode: 'numeric', autocomplete: 'off' }), hint: t('manager.price_hint') });
   const minOrder = field({ id: 'min-order', label: t('manager.min_field'), input: h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', value: '1' }), hint: t('manager.min_hint') });
   const packaging = field({ id: 'packaging', label: t('manager.packaging'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '60' }) });
+  const market = field({ id: 'market', label: t('manager.market'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '80', placeholder: t('manager.market_placeholder') }) });
   const storage = field({ id: 'storage', label: t('manager.stored_at'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '120' }) });
   const rangeBtns = [1, 2, 3].map((n) => h('button', { class: 'toggle__opt', type: 'button', 'aria-pressed': String(n === range), onclick: () => { range = n; for (const [i, b] of rangeBtns.entries()) b.setAttribute('aria-pressed', String(i + 1 === n)); paintLimits(); } }, t('pool.range', { n })));
   const rangeBox = h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('manager.range_label')), h('div', { class: 'row' }, h('div', { class: 'toggle', role: 'group', 'aria-label': t('manager.range_label') }, rangeBtns)));
-  const fields = [commodity, variety.input, price.input, minOrder.input, packaging.input, storage.input];
+  const fields = [commodity, variety.input, price.input, minOrder.input, packaging.input, market.input, storage.input];
 
   // photo slots
   const photoInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'visually-hidden', id: 'photo-pick', 'aria-label': t('manager.take_or_upload') });
@@ -51,14 +52,15 @@ function build() {
 
   function read() {
     let ok = true;
-    for (const f of [variety, price, minOrder, packaging, storage]) f.error(null);
+    for (const f of [variety, price, minOrder, packaging, market, storage]) f.error(null);
     if (!variety.input.value.trim()) { variety.error(t('manager.err_required')); ok = false; }
     const p = parsePricePerQuintal(price.input.value);
     if (!p.ok) { price.error(t(`input.price_${p.reason}`)); ok = false; }
     const m = parseQuantity(minOrder.input.value, 'quintal');
     if (!m.ok) { minOrder.error(t(m.reason === 'too_precise' ? 'input.quantity_too_precise_quintal' : `input.quantity_${m.reason}`)); ok = false; }
     if (!storage.input.value.trim()) { storage.error(t('manager.err_required')); ok = false; }
-    return ok ? { commodity_id: Number(commodity.value), variety: variety.input.value.trim(), range_no: range, packaging: packaging.input.value.trim() || null, storage_location: storage.input.value.trim(), min_order_g: Number(m.grams), price_paise_per_kg: Number(p.paisePerKg) } : null;
+    if (!market.input.value.trim()) { market.error(t('manager.err_required')); ok = false; }
+    return ok ? { commodity_id: Number(commodity.value), variety: variety.input.value.trim(), range_no: range, packaging: packaging.input.value.trim() || null, storage_location: storage.input.value.trim(), market: market.input.value.trim(), min_order_g: Number(m.grams), price_paise_per_kg: Number(p.paisePerKg) } : null;
   }
 
   async function ensureDraft() {
@@ -130,7 +132,7 @@ function build() {
     h('div', { class: 'detail-grid detail-grid--create' },
       h('section', { class: 'card stack' },
         h('div', { class: 'grid cols-2 grid--tight' }, cField.root, variety.root), rangeBox,
-        h('div', { class: 'grid cols-2 grid--tight' }, price.root, minOrder.root), h('div', { class: 'grid cols-2 grid--tight' }, packaging.root, storage.root),
+        h('div', { class: 'grid cols-2 grid--tight' }, price.root, minOrder.root), h('div', { class: 'grid cols-2 grid--tight' }, packaging.root, storage.root), market.root,
         h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('manager.photos_field')), slots, slotProblem),
         draftNote, formProblem,
         h('div', { class: 'row form-actions' }, draft, open, h('span', { class: 'small muted' }, t('manager.open_needs_photo')))),

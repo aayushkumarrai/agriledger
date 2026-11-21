@@ -52,14 +52,19 @@ scripts/run_server.sh    # then open http://localhost:8080
 The seed goes through the real server, so every ledger row, hash and receipt is genuine. Pool numbers start at 12.
 Every demo password is `Demo-pass-2026`.
 
-| Role | Username | Name |
-|---|---|---|
-| Pool Manager | `manager` | Kavita Desai |
-| Farmer A | `farmer.a` | Basavaraj Hiremath |
-| Farmer B | `farmer.b` | Renukamma Patil |
-| Farmer C | `farmer.c` | Mallikarjun Kulkarni |
-| Buyer 1 | `buyer.1` | Mahantesh Traders |
-| Buyer 2 | `buyer.2` | Gangadhar Agro Mart |
+| Role | Sign in with | Name | ID |
+|---|---|---|---|
+| Pool Manager | `manager` | Kavita Desai | M-0001 |
+| Farmer A | `farmer.a` or `9845000001` | Basavaraj Hiremath | F-0002 |
+| Farmer B | `farmer.b` or `9845000002` | Renukamma Patil | F-0003 |
+| Farmer C | `farmer.c` or `9845000003` | Mallikarjun Kulkarni | F-0004 |
+| Buyer 1 | `buyer.1` or `9845000004` | Mahantesh Traders | B-0005 |
+| Buyer 2 | `buyer.2` or `9845000005` | Gangadhar Agro Mart | B-0006 |
+| Farmer, pending | `9845000006` | Shivappa Naik | F-0007 |
+
+New people sign up themselves on the login page (**New here? Sign up**), choosing Farmer or Buyer, a mobile number, and an identity document. The account is
+pending until the Pool Manager approves it on the **People** page. There is no Pool Manager sign-up: that account is created on the server with
+`create-manager`.
 
 Pools: P-12 paddy, Sona Masuri, Range 1, ₹2,500 per quintal, 600 + 800 + 600 kg, open; P-13 groundnut, open; P-14 maize, sold out.
 Evaluators: follow `DEMO_SCRIPT.md`. On an Android phone on the same Wi-Fi, start the server with `AGRILEDGER_BIND=0.0.0.0` and open `http://<your PC's address>:8080`.

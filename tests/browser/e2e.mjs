@@ -39,7 +39,7 @@ async function story(vp) {
   await mgr.page.goto(`${base}/manager/create.html`); await ready(mgr.page); await mgr.page.waitForSelector('#variety');
   await mgr.page.selectOption('#commodity', { label: 'Paddy' });
   await mgr.page.fill('#variety', `Sona ${tag}`);
-  await mgr.page.fill('#price', '2,500'); await mgr.page.fill('#min-order', '1'); await mgr.page.fill('#packaging', '50 kg jute bags'); await mgr.page.fill('#storage', 'Navalgund godown, Dharwad');
+  await mgr.page.fill('#price', '2,500'); await mgr.page.fill('#min-order', '1'); await mgr.page.fill('#packaging', '50 kg jute bags'); await mgr.page.fill('#storage', 'Navalgund godown, Dharwad'); await mgr.page.fill('#market', 'Hubballi APMC');
   await mgr.page.setInputFiles('#photo-pick', { name: 'lot.png', mimeType: 'image/png', buffer: png(400, 300, [196, 160, 78], 3) });
   await mgr.page.waitForSelector('button:has-text("Open for sale"):not([disabled])');
   await mgr.page.click('button:has-text("Open for sale")');

@@ -1,4 +1,4 @@
-// Pool Manager: record a deposit, place a sale for a buyer, create an account (and the list of accounts).
+// Pool Manager: record a deposit, place a sale for an in-person buyer. (People and accounts live on the People page.)
 import { startPage } from '../layout.js';
 import { t } from '../i18n.js';
 import { api } from '../api.js';
@@ -17,8 +17,9 @@ append(main, [body, h('div', { class: 'row row--between' }, note, h('span', {}))
 body.append(skeleton(), skeleton());
 
 const qty = (g) => `${formatQuantity(g, getUnit())} ${t(`unit.${getUnit()}`)}`;
-const farmers = () => users.filter((u) => u.type === 'FARMER');
-const buyers = () => users.filter((u) => u.type === 'BUYER');
+const verified = (u) => u.status === 'active' || u.status === 'waiting_first_login';   // pending and deactivated people cannot deposit or buy
+const farmers = () => users.filter((u) => u.type === 'FARMER' && verified(u));
+const buyers = () => users.filter((u) => u.type === 'BUYER' && verified(u));
 const options = (list, label) => list.map((x) => h('option', { value: x.pool_id ?? x.user_id }, label(x)));
 const notice = () => h('p', { class: 'notice notice--grey', hidden: true, role: 'status' }, icon('check'), h('span', {}));
 // A form's last message survives the page being redrawn (a refresh after saving must not wipe the "saved" message).
@@ -135,52 +136,6 @@ function saleCard() {
     selling.length && buyers().length ? [pool.root, buyer.root, quantity.root, review, h('div', { class: 'row' }, go)] : h('p', { class: 'muted' }, t('manager.sale_none')));
 }
 
-// ---- accounts --------------------------------------------------------------------------------------------------------
-const ADJ = ['pale', 'calm', 'bright', 'quiet', 'swift', 'gentle', 'amber', 'green', 'golden', 'misty', 'sunny', 'brave'];
-const NOUN = ['river', 'meadow', 'harvest', 'lantern', 'orchard', 'granary', 'monsoon', 'sparrow', 'furrow', 'village', 'bazaar', 'temple'];
-function randomIndex(n) { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
-function temporaryPassword() {
-  const letters = 'abcdefghjkmnpqrstuvwxyz';
-  return `${letters[randomIndex(letters.length)]}${randomIndex(10)}-${ADJ[randomIndex(ADJ.length)]}-${NOUN[randomIndex(NOUN.length)]}-${10 + randomIndex(90)}`;
-}
-
-function accountCard() {
-  let type = 'FARMER';
-  const name = field({ id: 'acc-name', label: t('manager.full_name'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '100' }) });
-  const username = field({ id: 'acc-user', label: t('login.username'), input: h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false', maxlength: '50' }), hint: t('manager.username_hint') });
-  const temp = field({ id: 'acc-pass', label: t('manager.temp_password'), input: h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', value: temporaryPassword() }) });
-  const typeBtns = [['FARMER', 'role.farmer'], ['BUYER', 'role.buyer']].map(([v, k]) => h('button', { class: 'toggle__opt', type: 'button', 'aria-pressed': String(v === type), onclick: () => { type = v; for (const b of typeBtns) b.setAttribute('aria-pressed', String(b.dataset.type === v)); }, dataset: { type: v } }, t(k)));
-  const result = notice();
-  restore(result, 'account');
-  const create = button(t('manager.create_account'), { kind: 'primary', block: true, onclick: async () => {
-    if (isBusy(create)) return;
-    for (const f of [name, username, temp]) f.error(null);
-    let ok = true;
-    if (!name.input.value.trim()) { name.error(t('manager.err_required')); ok = false; }
-    if (!/^[a-z0-9._-]{3,50}$/.test(username.input.value)) { username.error(t('manager.err_username')); ok = false; }
-    if (temp.input.value.length < 8) { temp.error(t('password.too_short')); ok = false; }
-    if (!ok) return;
-    try {
-      await busy(create, () => api.post('/users', { name: name.input.value.trim(), username: username.input.value, type, temporary_password: temp.input.value }));
-      showNotice(result, t('manager.account_created', { name: name.input.value.trim(), username: username.input.value, password: temp.input.value }), 'grey', 'account');
-      name.input.value = ''; username.input.value = ''; temp.input.value = temporaryPassword();
-      await loadAll(true);
-    } catch (err) { showNotice(result, managerError(err), 'bad', 'account'); }
-  } });
-  const list = h('div', { id: 'accounts' });
-  paintAccounts(list);
-  return h('section', { class: 'card stack', id: 'form-account' }, h('p', { class: 'label' }, t('manager.accounts')), h('h2', {}, t('manager.account_title')),
-    name.root, h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('manager.account_type')), h('div', { class: 'toggle', role: 'group', 'aria-label': t('manager.account_type') }, typeBtns)),
-    username.root, temp.root, create, result,
-    h('p', { class: 'label' }, t('manager.existing')), list);
-}
-
-function paintAccounts(list) {
-  clear(list).append(h('ul', { class: 'accounts' }, users.map((u) => h('li', { class: 'accounts__row' },
-    h('span', { class: 'accounts__who' }, h('strong', {}, u.name), h('span', { class: 'small muted' }, t(`role.${u.type.toLowerCase()}`))),
-    u.status === 'active' ? tag('ok', t('status.active')) : u.status === 'waiting_first_login' ? tag('grey', t('status.waiting'), 'clock') : tag('grey', t('status.inactive'))))));
-}
-
 async function loadAll(quiet = false) {
   try {
     [pools, users] = await Promise.all([api.get('/pools'), api.get('/users')]);
@@ -189,7 +144,7 @@ async function loadAll(quiet = false) {
     const keep = [...body.querySelectorAll('input[id], select[id]')].map((el) => [el.id, el.type === 'checkbox' ? el.checked : el.value]);
     clear(body).append(
       h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('p', { class: 'label' }, t('manager.eyebrow')), h('h1', {}, t('manager.forms_title'))), h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle())),
-      h('div', { class: 'grid cols-3 grid--forms' }, depositCard(), saleCard(), accountCard()));
+      h('div', { class: 'grid cols-2 grid--forms' }, depositCard(), saleCard()));
     for (const [elId, value] of keep) {
       const el = document.getElementById(elId);
       if (!el) continue;

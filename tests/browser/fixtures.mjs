@@ -96,7 +96,7 @@ export async function seed(base, env) {
   const commodities = (await m.get('/reference/commodities')).data;
   const id = (name) => commodities.find((c) => c.name === name).commodity_id;
   const make = async (spec, photoColours, deposits, open = true) => {
-    const r = await m.post('/pools', { commodity_id: id(spec.commodity), variety: spec.variety, range_no: spec.range, packaging: spec.packaging, storage_location: spec.storage, min_order_g: spec.min, price_paise_per_kg: spec.price });
+    const r = await m.post('/pools', { commodity_id: id(spec.commodity), variety: spec.variety, range_no: spec.range, packaging: spec.packaging, storage_location: spec.storage, market: spec.market || 'Hubballi APMC', min_order_g: spec.min, price_paise_per_kg: spec.price });
     const poolId = r.data.pool_id;
     for (const [i, colour] of photoColours.entries()) await m.photo(poolId, png(400, 300, colour, poolId * 10 + i));
     for (const [farmer, grams] of deposits) await m.post(`/pools/${poolId}/contributions`, { seller_id: out.farmers[farmer].id, quantity_g: grams });

@@ -20,7 +20,7 @@ function paint() {
   clear(body).append(
     h('div', { class: 'stack' },
       breadcrumb([{ label: t('nav.my_pools'), href: '/farmer/pools.html' }, { label: poolCode(data.pool_id) }]),
-      h('div', { class: 'page-head' }, h('h1', {}, t('statement.title', { name: data.farmer_name })), h('div', { class: 'row no-print' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle(), button(t('statement.print'), { onclick: () => window.print() }))),
+      h('div', { class: 'page-head' }, h('h1', {}, `${t('statement.title', { name: data.farmer_name })} · ${data.farmer_code}`), h('div', { class: 'row no-print' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle(), button(t('statement.print'), { onclick: () => window.print() }))),
       h('p', { class: 'muted' }, `${poolCode(data.pool_id)} · ${data.commodity} · ${data.variety} · ${t('pool.range', { n: data.range_no })}`),
       h('div', { class: 'row' }, statementSubtitle(data))),
     view.tiles, view.table, view.changes);

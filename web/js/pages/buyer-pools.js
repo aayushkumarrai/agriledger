@@ -11,6 +11,8 @@ let pools = [];
 let commodityFilter = '';
 let grid;
 let filterSelect;
+let marketSelect;
+let marketFilter = '';
 
 function card(pool) {
   const photo = pool.photos[0] ? h('div', { class: 'photo photo--wide' }, h('img', { src: pool.photos[0].url, alt: t('photo.alt'), loading: 'lazy' })) : h('div', { class: 'photo photo--wide photo--empty' }, h('span', {}, t('photo.slot')));
@@ -62,12 +64,18 @@ function show(list) {
   clear(filterSelect).append(h('option', { value: '' }, t('buyer.all_commodities')), ...names.map((n) => h('option', { value: n }, n)));
   filterSelect.value = names.includes(keep) ? keep : '';
   commodityFilter = filterSelect.value;
+  const markets = [...new Set(list.map((p) => p.market).filter(Boolean))].sort();
+  const keepMarket = marketSelect.value;
+  clear(marketSelect).append(h('option', { value: '' }, t('buyer.all_markets')), ...markets.map((n) => h('option', { value: n }, n)));
+  marketSelect.value = markets.includes(keepMarket) ? keepMarket : '';
+  marketFilter = marketSelect.value;
+  marketWrap.hidden = markets.length < 2;   // a filter is only useful when there is a choice
   paint();
 }
 
 function paint() {
   // pools with stock first (newest first), sold-out pools after them, as in the wireframe
-  const visible = pools.filter((p) => !commodityFilter || p.commodity === commodityFilter)
+  const visible = pools.filter((p) => (!commodityFilter || p.commodity === commodityFilter) && (!marketFilter || p.market === marketFilter))
     .sort((a, b) => (BigInt(b.stock_g) > 0n) - (BigInt(a.stock_g) > 0n) || b.pool_id - a.pool_id);
   const seen = new Set();
   const ordered = [];
@@ -98,12 +106,15 @@ const { main, note } = await startPage({
 
 filterSelect = h('select', { class: 'select', id: 'commodity-filter', 'aria-label': t('buyer.commodity') });
 filterSelect.addEventListener('change', () => { commodityFilter = filterSelect.value; paint(); });
+marketSelect = h('select', { class: 'select', id: 'market-filter', 'aria-label': t('buyer.market') });
+marketSelect.addEventListener('change', () => { marketFilter = marketSelect.value; paint(); });
+const marketWrap = h('div', { class: 'select-wrap tool-select', hidden: true }, marketSelect, icon('chevron-down'));
 grid = h('div', { class: 'pool-grid', id: 'pool-grid' }, skeleton(), skeleton(), skeleton());
 
 append(main, [
   h('div', { class: 'page-head' },
     h('div', { class: 'stack stack--tight' }, h('p', { class: 'label' }, t('buyer.eyebrow')), h('h1', {}, t('buyer.pools_title'))),
-    h('div', { class: 'page-head__tools' }, h('div', { class: 'select-wrap tool-select' }, filterSelect, icon('chevron-down')), h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle()))),
+    h('div', { class: 'page-head__tools' }, h('div', { class: 'select-wrap tool-select' }, filterSelect, icon('chevron-down')), marketWrap, h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle()))),
   grid, h('div', { class: 'row row--between' }, note, h('span', {})),
 ]);
 onUnitChange(() => paint());

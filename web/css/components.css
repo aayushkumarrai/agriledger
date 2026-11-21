@@ -232,3 +232,10 @@
   .card, .tile { break-inside: avoid; }
   .card--table { border-color: var(--ink); }
 }
+
+/* the one line a not-yet-verified person sees at the top of every page */
+.notice--bar { margin-bottom: var(--s5); }
+
+/* visible to screen readers only */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.row-actions .row { justify-content: flex-end; }

@@ -1150,6 +1150,9 @@ TEST_F(E4Test, PeopleToolsAreForThePoolManagerOnly_DeactivateKeepsHistory) {
     EXPECT_EQ(mgr.patch(path, {{"phone", phone}}).status, 200);
     EXPECT_EQ(mgr.patch("/users/" + std::to_string(farmer[1].id), {{"phone", phone}}).status, 409);
     EXPECT_EQ(mgr.patch(path, {{"phone", "12345"}}).status, 400);
+    const std::string as_username = unique_phone();
+    ASSERT_EQ(mgr.post("/users", {{"name", "Digits Name"}, {"username", as_username}, {"type", "BUYER"}, {"temporary_password", kTemp}}).status, 201);
+    EXPECT_EQ(mgr.patch(path, {{"phone", as_username}}).status, 409) << "another person already signs in with that number";
     EXPECT_EQ(mgr.patch(path, {{"id_doc_type", "PAN"}}).status, 400) << "type and last four go together";
     EXPECT_EQ(mgr.post(path + "/approve", json::object()).status, 409) << "no identity document is recorded yet";
     ASSERT_EQ(mgr.patch(path, {{"id_doc_type", "AADHAAR"}, {"id_last4", "0042"}}).status, 200);

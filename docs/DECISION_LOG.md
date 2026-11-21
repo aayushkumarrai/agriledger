@@ -98,3 +98,12 @@ See spec §6 (full table with request/response shapes).
 - No explanatory helper text on screens (process notes, "updates by itself", "button turns off after one tap", etc.); only labels, values, errors and refusals.
 - Manager keeps the in-person buyer sale form (label: "For in-person buyers"); buyers buy on their own from any device.
 - Agreed, not built yet: self sign-up for Farmer and Buyer with generated IDs and Manager approval (reverses D-16); Manager accounts stay invite-only; People page (approve, edit, deactivate); identity check recorded as document type, masked number, verified by and date (no card photos; research first); optional Market field and buyer filter (schema change approved); farmer statement as a bill, showing the buyer's name; minimal transparency items (payout maths, record seal, price history). Google sign-in and mobile OTP are out of scope (no SMS or outside calls) and listed as future work.
+
+## O. Sign-up, approval and identity (21 Nov; reverses D-16)
+- Farmers and Buyers sign up themselves (mobile number is the sign-in name; username still works for older accounts). Self sign-up starts PENDING; the Pool Manager approves on the People page. Pool Manager accounts are created only on the server.
+- A pending farmer cannot receive deposits and a pending buyer cannot buy (enforced in E2, inside the transaction). Deactivate (never delete) keeps every ledger row and ends the person's sessions.
+- Identity record: document type from a fixed list (farmers: APMC registration, land record, Aadhaar; buyers: trade licence, GST, PAN), last four characters only, who checked it and when. No card images and no full numbers are stored (privacy; Aadhaar rules, DPDP Act 2023). PROPOSED: the document lists and the "checked in person" approach, pending the research on what APMCs ask for.
+- Generated public IDs: F-0002, B-0005, M-0001 (from the account number; unique).
+- Pools have a Market (APMC) field; buyers can filter by it when there is more than one market. Several managers per market is out of scope.
+- Not built: Google sign-in and mobile OTP (need outside services and SMS, out of scope).
+- Schema change (approved by the user, 21 Nov): app_user (phone, public_code, approval_status, id_doc_type, id_last4, verified_by, verified_at), pool.market. Existing databases need `docker compose down -v` and a re-seed.

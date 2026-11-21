@@ -56,6 +56,7 @@ function build() {
   const addFact = (label, value) => append(facts, [h('dt', {}, label), h('dd', {}, value)]);
   addFact(t('pool.commodity_variety'), `${p.commodity} · ${p.variety}`);
   if (p.packaging) addFact(t('pool.packaging'), p.packaging);
+  if (p.market) addFact(t('buyer.market'), p.market);
   addFact(t('pool.stored'), p.storage_location);
   addFact(t('pool.contributed_by'), t(p.farmer_count === 1 ? 'pool.farmers_private_one' : 'pool.farmers_private', { count: p.farmer_count }));
   const lastSale = h('dd', {}, p.last_sale_at ? formatDateTime(p.last_sale_at) : t('common.none'));

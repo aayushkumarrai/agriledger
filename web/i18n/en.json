@@ -21,7 +21,8 @@
     "active": "Active",
     "waiting": "Waiting for first login",
     "no_records": "No records yet",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "pending": "Pending verification"
   },
   "common": {
     "loading": "Loading…",
@@ -98,6 +99,10 @@
       "title": "Many buyers are ordering right now.",
       "body": "Please try again in a moment. Nothing was bought.",
       "action": "Try again"
+    },
+    "BUYER_NOT_APPROVED": {
+      "title": "Your account is waiting to be verified.",
+      "body": ""
     }
   },
   "styleguide": {
@@ -256,18 +261,21 @@
     "manager_pools": "Pools · AgriLedger",
     "manager_pool": "Pool · AgriLedger",
     "manager_create": "Create pool · AgriLedger",
-    "manager_accounts": "Accounts · AgriLedger",
-    "manager_statement": "Farmer statement · AgriLedger"
+    "manager_accounts": "Deposits and sales · AgriLedger",
+    "manager_statement": "Farmer statement · AgriLedger",
+    "signup": "Sign up · AgriLedger",
+    "manager_people": "People · AgriLedger"
   },
   "nav": {
     "pools": "Pools",
     "purchases": "My purchases",
     "my_pools": "My pools",
     "my_statement": "My statement",
-    "accounts": "Accounts",
+    "accounts": "Deposits and sales",
     "menu": "Menu",
     "main": "Main menu",
-    "breadcrumb": "You are here"
+    "breadcrumb": "You are here",
+    "people": "People"
   },
   "role": {
     "buyer": "Buyer",
@@ -280,12 +288,14 @@
   },
   "login": {
     "title": "Log in",
-    "username": "Username",
+    "username": "Mobile number or username",
     "password": "Password",
     "submit": "Log in",
     "invalid": "The username or password is incorrect.",
     "too_many": "Too many attempts. Please wait a few minutes and try again.",
-    "no_signup": "There is no sign-up link. Your Pool Manager creates your account and gives you a first password."
+    "no_signup": "There is no sign-up link. Your Pool Manager creates your account and gives you a first password.",
+    "new_here": "New here?",
+    "sign_up": "Sign up"
   },
   "password": {
     "title": "Set your own password",
@@ -318,7 +328,9 @@
     "quantity_hint": "Minimum order {min} · at most {max}",
     "quantity_label_kg": "Quantity to buy (kg)",
     "quantity_label_quintal": "Quantity to buy (quintal)",
-    "out_of_stock_note": "This pool is out of stock. You can buy again after the Pool Manager records a new deposit."
+    "out_of_stock_note": "This pool is out of stock. You can buy again after the Pool Manager records a new deposit.",
+    "all_markets": "All markets",
+    "market": "Market"
   },
   "pool": {
     "about": "About this lot",
@@ -521,7 +533,7 @@
     "quality_check": "Quality check",
     "allowed_at_most": "Allowed at most",
     "err_required": "This field is required.",
-    "forms_title": "Deposits, sales and accounts",
+    "forms_title": "Deposits and sales",
     "intake": "Intake",
     "deposit_title": "Record a farmer's deposit",
     "pool": "Pool",
@@ -550,7 +562,7 @@
     "username_hint": "3 to 50 letters, digits, dots or dashes.",
     "temp_password": "Temporary password",
     "create_account": "Create account",
-    "account_created": "Account created for {name}. Username {username}, temporary password {password}.",
+    "account_created": "Account created for {name}. Mobile number {username}, temporary password {password}.",
     "existing": "Existing accounts",
     "col_name": "Name",
     "col_type": "Type",
@@ -568,6 +580,78 @@
     "no_share": "This farmer has no share in that pool.",
     "mv_in": "Deposit",
     "mv_out": "Sale",
-    "draft_saved_note": "Saved as a draft. Its details are locked here; you can change the price later."
+    "draft_saved_note": "Saved as a draft. Its details are locked here; you can change the price later.",
+    "market": "Market",
+    "market_placeholder": "For example, Hubballi APMC",
+    "err_not_approved": "This person has not been verified yet."
+  },
+  "signup": {
+    "title": "Create your account",
+    "i_am": "I am a",
+    "name": "Full name",
+    "mobile": "Mobile number",
+    "document": "Identity document",
+    "last4": "Last 4 characters of its number",
+    "password": "Password",
+    "repeat": "Repeat password",
+    "submit": "Sign up",
+    "have_account": "Already have an account?",
+    "log_in": "Log in",
+    "err_name": "Please enter your full name.",
+    "err_phone": "Enter a 10-digit mobile number.",
+    "err_last4": "Enter exactly 4 letters or digits.",
+    "err_doc": "Choose a document.",
+    "phone_taken": "This mobile number is already registered."
+  },
+  "doc": {
+    "APMC_REG": "APMC farmer registration",
+    "LAND_RECORD": "Land record (RTC)",
+    "AADHAAR": "Aadhaar",
+    "TRADE_LICENCE": "APMC trade licence",
+    "GST": "GST registration",
+    "PAN": "PAN",
+    "masked": "{doc} ending {last4}",
+    "checked": "Checked by {name} on {date}",
+    "none": "Not recorded"
+  },
+  "approval": {
+    "pending": "Waiting for the Pool Manager to verify you."
+  },
+  "people": {
+    "title": "People",
+    "all_types": "Everyone",
+    "farmers": "Farmers",
+    "buyers": "Buyers",
+    "all_statuses": "All statuses",
+    "pending_only": "Pending verification",
+    "id": "ID",
+    "name": "Name",
+    "mobile": "Mobile number",
+    "type": "Type",
+    "document": "Identity document",
+    "status": "Status",
+    "approve": "Approve",
+    "edit": "Edit",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "add_title": "Add a person",
+    "add_button": "Add person",
+    "edit_title": "Edit {name}",
+    "deactivate_title": "Deactivate {name}?",
+    "deactivate_body": "They are signed out and cannot sign in. Their records stay.",
+    "empty": "No one matches these filters.",
+    "error": "The list could not be loaded.",
+    "saved": "Saved.",
+    "err_phone": "Enter a 10-digit mobile number.",
+    "err_duplicate_phone": "That mobile number is already registered.",
+    "err_no_doc": "Add the identity document first.",
+    "doc_optional": "Identity document (optional)",
+    "pending_count": "{n} waiting for verification",
+    "save": "Save",
+    "done": "Done",
+    "add_done": "Account created for {name}. Mobile number {phone}, temporary password {password}.",
+    "filters": "Filters",
+    "col_actions": "Actions",
+    "row_label": "{name}"
   }
 }

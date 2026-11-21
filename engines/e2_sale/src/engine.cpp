@@ -174,7 +174,11 @@ void Engine::update_user(i64 user_id, const UserEdit& e) {
                 tx.exec_params0("UPDATE seller SET seller_name = $2 WHERE seller_id = $1", user_id, *e.name);
                 tx.exec_params0("UPDATE buyer SET buyer_name = $2 WHERE buyer_id = $1", user_id, *e.name);
             }
-            if (e.phone) tx.exec_params0("UPDATE app_user SET phone = $2 WHERE user_id = $1", user_id, *e.phone);
+            if (e.phone) {
+                // a number someone already uses as their sign-in name would make two people answer to one sign-in
+                require(tx.exec_params("SELECT 1 FROM app_user WHERE username = $1 AND user_id <> $2", *e.phone, user_id).empty(), "DUPLICATE_PHONE", "that mobile number is already registered");
+                tx.exec_params0("UPDATE app_user SET phone = $2 WHERE user_id = $1", user_id, *e.phone);
+            }
             if (e.id_doc_type)   // a changed document is a new document: it has to be checked again
                 tx.exec_params0("UPDATE app_user SET id_doc_type = $2, id_last4 = $3, verified_by = NULL, verified_at = NULL, approval_status = 'PENDING' WHERE user_id = $1",
                                 user_id, *e.id_doc_type, *e.id_last4);

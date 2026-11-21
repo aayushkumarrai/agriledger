@@ -54,7 +54,7 @@ function loginScreen(temporaryPassword = '') {
     h('h1', { class: 'title-page' }, t('login.title')),
     params.get('ended') ? h('p', { class: 'notice notice--grey', role: 'status' }, icon('clock'), h('span', {}, t('error.session_ended'))) : null,
     form,
-    h('p', { class: 'small muted' }, t('login.no_signup'))]);
+    h('p', { class: 'small muted' }, `${t('login.new_here')} `, h('a', { href: '/signup.html' }, t('login.sign_up')))]);
   user.input.focus();
 }
 

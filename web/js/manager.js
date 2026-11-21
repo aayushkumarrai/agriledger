@@ -17,6 +17,10 @@ export function managerError(err) {
   switch (err.code) {
     case 'DUPLICATE_USERNAME': return t('manager.err_duplicate_username');
     case 'POOL_NOT_OPEN': return t('manager.err_pool_closed');
+    case 'DUPLICATE_PHONE': return t('people.err_duplicate_phone');
+    case 'NO_ID_DOCUMENT': return t('people.err_no_doc');
+    case 'FARMER_NOT_APPROVED':
+    case 'BUYER_NOT_APPROVED': return t('manager.err_not_approved');
     case 'NO_CHANGE': return t('manager.err_no_change');
     case 'PHOTO_REQUIRED': return t('manager.err_photo_required');
     case 'PHOTO_TOO_LARGE': return t('manager.err_photo_large');

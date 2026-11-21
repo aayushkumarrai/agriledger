@@ -309,7 +309,7 @@ async function manager(data, vp) {
   // the pools table
   tally(await review(page, stem('manager-pools'), vp, { shots: { table: '.card--table' } }));
   const listText = await page.textContent('main');
-  check(/Draft/.test(listText) && /Out of stock/.test(listText) && /Reconciled/.test(listText), 'the table shows draft, out of stock and reconciled');
+  check(/Draft/.test(listText) && /Out of stock/.test(listText) && /Records verified/.test(listText), 'the table shows draft, out of stock and reconciled');
   await page.selectOption('select[aria-label="Status"]', 'draft');
   check((await page.locator('.table--rows tbody tr').count()) >= 1 && !(await page.textContent('main')).includes('Sona Masuri'), 'the status filter shows only drafts');
   await page.selectOption('select[aria-label="Status"]', '');
@@ -396,7 +396,7 @@ async function manager(data, vp) {
   check(await page.locator('button:has-text("Open for sale")').isDisabled(), 'Open for sale waits for a photo');
   await page.selectOption('#commodity', { label: 'Maize' });
   await page.fill('#variety', `Hybrid ${vp.label} ${Date.now() % 1000}`);
-  await page.click('.toggle__opt:has-text("Range 2")');
+  await page.click('.toggle__opt:has-text("Grade 2")');
   await page.fill('#price', '2,090.50'); await page.fill('#min-order', '2'); await page.fill('#packaging', '50 kg HDPE bags'); await page.fill('#storage', 'Hubballi APMC yard');
   await page.click('button:has-text("Save as draft")');
   await page.waitForSelector('#price-error:not([hidden])');

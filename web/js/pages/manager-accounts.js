@@ -88,7 +88,7 @@ function depositCard() {
   refreshers.push(paint);
   paint();
   return h('section', { class: 'card stack', id: 'form-deposit' }, h('p', { class: 'label' }, t('manager.intake')), h('h2', {}, t('manager.deposit_title')),
-    usable.length && farmers().length ? [pool.root, farmer.root, quantity.root, testedLabel, preview, problem, save, h('p', { class: 'small muted' }, t('manager.deposit_note'))] : h('p', { class: 'muted' }, t('manager.deposit_none')));
+    usable.length && farmers().length ? [pool.root, farmer.root, quantity.root, testedLabel, preview, problem, save] : h('p', { class: 'muted' }, t('manager.deposit_none')));
 }
 
 // ---- sale for a buyer ---------------------------------------------------------------------------------------------------
@@ -132,7 +132,7 @@ function saleCard() {
   refreshers.push(paint);
   paint();
   return h('section', { class: 'card stack', id: 'form-sale' }, h('p', { class: 'label' }, t('manager.phone_buyers')), h('h2', {}, t('manager.sale_title')),
-    selling.length && buyers().length ? [pool.root, buyer.root, quantity.root, review, h('div', { class: 'row' }, go), h('p', { class: 'small muted' }, t('manager.sale_note'))] : h('p', { class: 'muted' }, t('manager.sale_none')));
+    selling.length && buyers().length ? [pool.root, buyer.root, quantity.root, review, h('div', { class: 'row' }, go)] : h('p', { class: 'muted' }, t('manager.sale_none')));
 }
 
 // ---- accounts --------------------------------------------------------------------------------------------------------
@@ -148,7 +148,7 @@ function accountCard() {
   let type = 'FARMER';
   const name = field({ id: 'acc-name', label: t('manager.full_name'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '100' }) });
   const username = field({ id: 'acc-user', label: t('login.username'), input: h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false', maxlength: '50' }), hint: t('manager.username_hint') });
-  const temp = field({ id: 'acc-pass', label: t('manager.temp_password'), input: h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', value: temporaryPassword() }), hint: t('manager.temp_hint') });
+  const temp = field({ id: 'acc-pass', label: t('manager.temp_password'), input: h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', value: temporaryPassword() }) });
   const typeBtns = [['FARMER', 'role.farmer'], ['BUYER', 'role.buyer']].map(([v, k]) => h('button', { class: 'toggle__opt', type: 'button', 'aria-pressed': String(v === type), onclick: () => { type = v; for (const b of typeBtns) b.setAttribute('aria-pressed', String(b.dataset.type === v)); }, dataset: { type: v } }, t(k)));
   const result = notice();
   restore(result, 'account');

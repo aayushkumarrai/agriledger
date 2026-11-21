@@ -25,7 +25,7 @@ function build() {
   const packaging = field({ id: 'packaging', label: t('manager.packaging'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '60' }) });
   const storage = field({ id: 'storage', label: t('manager.stored_at'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '120' }) });
   const rangeBtns = [1, 2, 3].map((n) => h('button', { class: 'toggle__opt', type: 'button', 'aria-pressed': String(n === range), onclick: () => { range = n; for (const [i, b] of rangeBtns.entries()) b.setAttribute('aria-pressed', String(i + 1 === n)); paintLimits(); } }, t('pool.range', { n })));
-  const rangeBox = h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('manager.range_label')), h('div', { class: 'row' }, h('div', { class: 'toggle', role: 'group', 'aria-label': t('manager.range_label') }, rangeBtns), h('p', { class: 'small muted range-note' }, t('manager.range_note'))));
+  const rangeBox = h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('manager.range_label')), h('div', { class: 'row' }, h('div', { class: 'toggle', role: 'group', 'aria-label': t('manager.range_label') }, rangeBtns)));
   const fields = [commodity, variety.input, price.input, minOrder.input, packaging.input, storage.input];
 
   // photo slots
@@ -126,17 +126,16 @@ function build() {
   paintLimits();
 
   body.replaceChildren(
-    h('div', { class: 'stack' }, breadcrumb([{ label: t('nav.pools'), href: '/manager/pools.html' }, { label: t('manager.new_pool') }]), h('h1', {}, t('manager.create_pool_title')), h('p', { class: 'muted' }, t('manager.create_intro'))),
+    h('div', { class: 'stack' }, breadcrumb([{ label: t('nav.pools'), href: '/manager/pools.html' }, { label: t('manager.new_pool') }]), h('h1', {}, t('manager.create_pool_title'))),
     h('div', { class: 'detail-grid detail-grid--create' },
       h('section', { class: 'card stack' },
         h('div', { class: 'grid cols-2 grid--tight' }, cField.root, variety.root), rangeBox,
         h('div', { class: 'grid cols-2 grid--tight' }, price.root, minOrder.root), h('div', { class: 'grid cols-2 grid--tight' }, packaging.root, storage.root),
-        h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('manager.photos_field')), slots, slotProblem, h('p', { class: 'small muted' }, t('manager.photo_needed'))),
+        h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('manager.photos_field')), slots, slotProblem),
         draftNote, formProblem,
         h('div', { class: 'row form-actions' }, draft, open, h('span', { class: 'small muted' }, t('manager.open_needs_photo')))),
       h('div', { class: 'stack stack--loose' },
-        h('section', { class: 'card stack' }, limitsTitle, limits, h('p', { class: 'small muted' }, t('manager.limits_note'))),
-        h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('manager.next_title')), h('ol', { class: 'steps' }, [1, 2, 3, 4].map((n) => h('li', {}, t(`manager.next_${n}`)))), h('p', { class: 'small muted' }, t('manager.next_note'))))),
+        h('section', { class: 'card stack' }, limitsTitle, limits))),
     photoInput);
 }
 

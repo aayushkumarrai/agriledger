@@ -48,7 +48,7 @@ function build() {
   const fill = h('div', { class: 'meter__fill' });
   const stockSub = h('p', { class: 'small muted' });
   const stockCard = h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('manager.live_stock')),
-    h('p', {}, stock, ' ', stockUnit), h('div', { class: 'meter', role: 'img', 'aria-label': t('manager.live_stock') }, fill), stockSub, h('p', { class: 'small muted' }, t('manager.updates_itself')));
+    h('p', {}, stock, ' ', stockUnit), h('div', { class: 'meter', role: 'img', 'aria-label': t('manager.live_stock') }, fill), stockSub);
 
   // price and rules
   const price = h('span', { class: 'key-number' });
@@ -64,15 +64,14 @@ function build() {
   const recText = h('p', { class: 'small muted' });
   const verify = button(t('manager.verify'), { onclick: () => runVerify(verify) });
   const verifyResult = h('div', { class: 'stack stack--tight', role: 'status' });
-  const recCard = h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('manager.records_check')), recTag, recText, h('div', {}, verify), verifyResult, h('p', { class: 'small muted' }, t('manager.verify_note')));
+  const recCard = h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('manager.records_check')), recTag, recText, h('div', {}, verify), verifyResult);
 
   // photos
   const slots = h('div', { class: 'photo-row' });
-  const photoNote = h('p', { class: 'small muted' }, t('manager.photos_note'));
   const photoProblemLine = h('p', { class: 'notice notice--bad', hidden: true, role: 'alert' }, icon('cross'), h('span', {}));
   const fileInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'visually-hidden', id: 'photo-input', 'aria-label': t('common.add_photo') });
   fileInput.addEventListener('change', () => uploadPhoto(fileInput));
-  const photosCard = h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('manager.photos_title')), slots, photoProblemLine, photoNote);
+  const photosCard = h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('manager.photos_title')), slots, photoProblemLine);
 
   // farmers
   const farmerBody = h('tbody', {});
@@ -101,9 +100,8 @@ function build() {
       h('div', { class: 'row' }, tagSlot, meta)),
     h('div', { class: 'grid cols-3' }, stockCard, priceCard, recCard),
     h('div', { class: 'grid cols-2 grid--unequal' }, photosCard, farmersCard),
-    h('div', { class: 'stack' }, h('div', { class: 'page-head page-head--tight' }, h('h2', {}, t('manager.three_ledgers')), h('p', { class: 'small muted' }, t('manager.ledgers_note'))),
-      h('div', { class: 'grid cols-3 ledgers' }, L.inventory.root, L.ownership.root, L.financial.root),
-      h('p', { class: 'small muted' }, t('manager.ledgers_foot'))),
+    h('div', { class: 'stack' }, h('div', { class: 'page-head page-head--tight' }, h('h2', {}, t('manager.three_ledgers'))),
+      h('div', { class: 'grid cols-3 ledgers' }, L.inventory.root, L.ownership.root, L.financial.root)),
     h('div', { class: 'row row--between' }, note, h('span', {})), fileInput);
   refs = { title, tagSlot, meta, stock, stockUnit, fill, stockSub, price, priceLines, minOrder, closeBtn, recTag, recText, verifyResult, slots, photoProblemLine, fileInput, farmerBody, farmerHead, L };
 }

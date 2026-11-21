@@ -92,3 +92,9 @@ See spec §6 (full table with request/response shapes).
 - Refined and restrained, not bold or trendy; follow the wireframes and tokens exactly. Self-hosted fonts, one inline line-icon set (single stroke width, no emoji), hairline borders instead of shadows (one soft shadow only on pop-ups; this overrides the earlier "no shadows" rule and the wireframe pop-up look), photo slots with a fixed aspect ratio, realistic demo data.
 - States for every control: hover, focus, pressed, disabled, loading, empty, error.
 - Per screen: screenshots at 1200 px and 390 px, squint test, greyscale test, spacing audit against the 4/8/12/16/20/24/32 scale, number alignment; fix before moving on and list the fixes.
+
+## N. Change round, 21 Nov (user's review list; decisions agreed)
+- Wording: "Range" is shown as **Grade** (key names unchanged); "Reconciled" is **Records verified** / **Records need checking**; "The three ledgers" is **Pool history** with **Stock movements**, **Farmer shares**, **Payments**; buyer list button is **View**.
+- No explanatory helper text on screens (process notes, "updates by itself", "button turns off after one tap", etc.); only labels, values, errors and refusals.
+- Manager keeps the in-person buyer sale form (label: "For in-person buyers"); buyers buy on their own from any device.
+- Agreed, not built yet: self sign-up for Farmer and Buyer with generated IDs and Manager approval (reverses D-16); Manager accounts stay invite-only; People page (approve, edit, deactivate); identity check recorded as document type, masked number, verified by and date (no card photos; research first); optional Market field and buyer filter (schema change approved); farmer statement as a bill, showing the buyer's name; minimal transparency items (payout maths, record seal, price history). Google sign-in and mobile OTP are out of scope (no SMS or outside calls) and listed as future work.

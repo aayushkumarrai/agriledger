@@ -51,7 +51,6 @@ export function startPurchase({ pool, grams, buyer = null, farmerNames = {}, onF
       h('h2', {}, t('sale.confirm_title')),
       rows([[t('sale.pool'), lot], [t('sale.quantity'), qty(order.grams)], [t('sale.price'), `${formatPricePerQuintal(order.paisePerKg)} ${t('unit.per_quintal')}`], [t('sale.total'), h('strong', {}, total())]]),
       h('div', { class: 'row' }, button(t('common.go_back'), { onclick: () => closeModal() }), confirmButton),
-      h('p', { class: 'small muted' }, t('sale.one_tap')),
     ];
   }
 

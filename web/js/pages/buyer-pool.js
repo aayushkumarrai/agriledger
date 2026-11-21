@@ -88,7 +88,6 @@ function build() {
       h('div', { class: 'fig--right' }, h('p', { class: 'label' }, t('buyer.available_now')), h('p', {}, avail, ' ', availUnit))),
     compare, f.root, h('div', { class: 'total-box' }, h('p', { class: 'label' }, t('sale.total')), total), outNote, review,
     h('p', { class: 'small muted' }, t('buyer.nothing_bought')));
-  const ifOthers = h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('buyer.if_others_title')), h('p', { class: 'muted' }, t('buyer.if_others_body')));
 
   const title = h('h1', {});
   const tagSlot = h('span', {});
@@ -102,7 +101,7 @@ function build() {
       h('div', { class: 'stack stack--loose' }, gallery,
         h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('pool.about')), facts),
         h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('pool.quality', { n: p.range_no })), limits)),
-      h('div', { class: 'stack stack--loose' }, buyBox, ifOthers)),
+      h('div', { class: 'stack stack--loose' }, buyBox)),
     h('div', { class: 'row row--between' }, note, h('span', {})));
   refs = { title, tagSlot, meta, price, priceKg, avail, availUnit, compare, input, field: f, total, review, outNote, lastSale };
 }
@@ -122,7 +121,6 @@ function update(unitChanged = false) {
   const ref = [];
   if (p.reference.msp) ref.push(t('buyer.msp_line', { label: p.reference.msp.label, price: formatPaise(p.reference.msp.price_paise_per_quintal) }));
   if (p.reference.mandi_modal) ref.push(t('buyer.mandi_line', { price: formatPaise(p.reference.mandi_modal.price_paise_per_quintal), label: p.reference.mandi_modal.label, date: formatDate(p.reference.mandi_modal.as_of) }));
-  ref.push(t('buyer.set_by_manager'));
   r.compare.textContent = ref.join(' ');
   r.field.hintEl.textContent = t('buyer.quantity_hint', { min: qty(p.min_order_g), max: qty(p.stock_g) });
   r.field.root.querySelector('label').textContent = t(`buyer.quantity_label_${getUnit()}`);

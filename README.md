@@ -80,6 +80,10 @@ buyers and farmers see them on their pool pages. Prices are always shown with th
 Without a key the button says prices are not set up. For an offline demo set `AGRILEDGER_MARKET_FEED_FILE=tests/fixtures/market_sample.json` (saved real quotes from 25 Nov 2026);
 `scripts/seed_demo.sh` does this by itself when there is no key. A failed update never removes the last saved prices.
 
+## Evidence output for the handbook
+`scripts/evidence.sh <part>` prints the command output the Sprint 2 handbook asks you to screenshot, with the command, the date and the commit shown above the output.
+Parts: `db`, `db-detail`, `e1`, `e1-worked`, `e2`, `e3`, `oversell`, `e4`, `all-cpp`, `js`, `static`, `screens`, `e2e` and `api` (start `scripts/run_server.sh` first for `api`). Run it with no argument to see the list.
+
 ## Browser tests
 ```bash
 scripts/screens_test.sh all   # every screen at 1200 px and 390 px, four states each, plus the audits

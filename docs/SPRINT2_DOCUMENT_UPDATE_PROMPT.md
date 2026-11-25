@@ -13,6 +13,10 @@ HOW TO WORK
 9. The repository link is https://github.com/aayushkumarrai/agriledger . Write it wherever the document has "[repository URL: add]" or "[repository URL]".
 10. When you finish, give me two short lists: every place where you left a square bracket note, and every statement you were not fully sure about.
 
+LANGUAGE AND TECHNICAL DETAIL
+
+Write every explanation in natural, readable language, the way a student would explain their own work to a teacher: short sentences, no filler and no showy words. Do not water down the technical content while doing this. Wherever the document needs precision, keep the exact terminology and show the real thing: table and column names, constraint names, function and class names, test names, endpoint paths, status codes, commands, file paths, and short lines or snippets of code or terminal output, copied exactly from the facts above or from the repository and never reworded or invented. Put such text in the same style the original document uses for code (for example the look of the existing test log), and put it on its own line when it is longer than a few words. A good pattern is one plain sentence that says what happened and why it matters, followed by the exact name, command or line as evidence. Use technical terms when they are the correct word (row lock, append-only trigger, hash chain, largest remainder, reconciliation, transaction rollback, FIFO queue, CHECK constraint) and explain a term in plain words only the first time it appears, if a reader outside the team might not know it. Never simplify numbers, units or identifiers into loose descriptions. If a real code line is long, quote only the relevant part and name the file it comes from. Descriptive cells, defect stories, notes and paragraphs should read naturally; tables of facts, IDs, commands and results should stay exact and compact.
+
 PART 1. THE FACTS (the only source of truth)
 
 What exists on 25 November 2026
@@ -294,7 +298,7 @@ Section 13: the fourteen rows FR-01 to NFR-04 plus CH-01 to CH-03.
 Section 14: Weeks 10 to 13.
 Section 15: the nine checklist rows.
 Section 16: unchanged.
-Finally scan the whole document once for forbidden symbols (rule 4) and for any leftover "Not yet implemented", "Planned", "Pending", "Not yet run" or "to be added".
+Finally scan the whole document once for forbidden symbols (rule 4), for explanations that read stiffly instead of naturally, and for code or terminology that was loosened where it should be exact (the Language and Technical Detail paragraph), and for any leftover "Not yet implemented", "Planned", "Pending", "Not yet run" or "to be added".
 
 AT THE END
 Share the updated Word document (.docx) as the output, with the same layout, fonts, table styling, headers and footers as the attached original, and with every change made inside it. Save it under a new name so the original stays untouched. Do not paste the document text into the chat and do not summarise it instead of editing it. Then give me the two lists from rule 10 as a short message.

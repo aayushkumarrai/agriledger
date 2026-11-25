@@ -3,7 +3,8 @@
 // A plain .sql file cannot do this: the audit hashes and the allocation are computed by the C++ engines (E1/E2).
 import { randomUUID } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { Api, png } from '../tests/browser/fixtures.mjs';
+import { readFileSync } from 'node:fs';
+import { Api } from '../tests/browser/fixtures.mjs';
 
 const base = process.argv[2];
 const TEMP = 'Temp-pass-1234';
@@ -49,19 +50,20 @@ async function marketPrice(commodityName, variety, fallback) {
   return summary ? summary.median_modal_paise_per_kg : fallback;
 }
 const commodity = (name) => commodities.find((c) => c.name === name).commodity_id;
-const make = async (spec, colours, deposits) => {
+// real photos of a lot (a heap or sacks of the grain), see scripts/demo-photos/CREDITS.md
+const make = async (spec, photos, deposits) => {
   const r = await m.post('/pools', { commodity_id: commodity(spec.commodity), variety: spec.variety, range_no: spec.range, packaging: spec.packaging, storage_location: spec.storage, market: spec.market, min_order_g: spec.min, price_paise_per_kg: spec.price });
   const id = r.data.pool_id;
-  for (const [i, c] of colours.entries()) await m.photo(id, png(400, 300, c, id * 10 + i));
+  for (const file of photos) await m.photo(id, readFileSync(new URL(`./demo-photos/${file}`, import.meta.url)), 'image/jpeg', file);
   for (const [who, grams] of deposits) await m.post(`/pools/${id}/contributions`, { seller_id: ids[who], quantity_g: grams });
   await m.patch(`/pools/${id}`, { status: 'open' });
   return id;
 };
 // the main demo pool: paddy, Sona Masuri, Category 1, 600 + 800 + 600 kg, priced from today's market
-const main = await make({ commodity: 'Paddy', variety: 'Sona Mahsuri', range: 1, packaging: '50 kg jute bags', storage: 'Navalgund godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: await marketPrice('Paddy', 'Sona Mahsuri', 2500) }, [[196, 160, 78], [176, 142, 70]], [['farmer.a', 600000], ['farmer.b', 800000], ['farmer.c', 600000]]);
-const second = await make({ commodity: 'Groundnut with pods', variety: 'Gejje', range: 2, packaging: '40 kg gunny bags', storage: 'Annigeri godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: await marketPrice('Groundnut with pods', 'Gejje', 6783) }, [[184, 132, 84]], [['farmer.a', 1125500], ['farmer.b', 1462000]]);
+const main = await make({ commodity: 'Paddy', variety: 'Sona Mahsuri', range: 1, packaging: '50 kg jute bags', storage: 'Navalgund godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: await marketPrice('Paddy', 'Sona Mahsuri', 2500) }, ['paddy.jpg'], [['farmer.a', 600000], ['farmer.b', 800000], ['farmer.c', 600000]]);
+const second = await make({ commodity: 'Groundnut with pods', variety: 'Gejje', range: 2, packaging: '40 kg gunny bags', storage: 'Annigeri godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: await marketPrice('Groundnut with pods', 'Gejje', 6783) }, ['groundnut.jpg'], [['farmer.a', 1125500], ['farmer.b', 1462000]]);
 const maizePrice = await marketPrice('Maize', 'Local', 2090);
-const sold = await make({ commodity: 'Maize', variety: 'Local', range: 1, packaging: '50 kg HDPE bags', storage: 'Hubballi APMC yard', market: 'Hubballi APMC', min: 200000, price: maizePrice }, [[214, 178, 80]], [['farmer.b', 520500]]);
+const sold = await make({ commodity: 'Maize', variety: 'Local', range: 1, packaging: '50 kg HDPE bags', storage: 'Hubballi APMC yard', market: 'Hubballi APMC', min: 200000, price: maizePrice }, ['maize.jpg'], [['farmer.b', 520500]]);
 const b = new Api(base);
 await b.login('buyer.1', DEMO_PASSWORD);
 await b.post(`/pools/${sold}/sales`, { request_id: randomUUID(), quantity_g: 520500, confirmed_price_paise_per_kg: maizePrice });   // sells out

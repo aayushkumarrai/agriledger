@@ -29,10 +29,10 @@ class Api {
     await this.login(u, TEMP);
     await this.post('/auth/change-password', { current_password: TEMP, new_password: PASS });
   }
-  async photo(poolId, png) {
+  async photo(poolId, png, type = 'image/png', filename = 'lot.png') {
     // Node's FormData is sent chunked; browsers and curl send a Content-Length, so build the body the way they do
     const boundary = `----agriFixture${Date.now().toString(16)}`;
-    const body = Buffer.concat([Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="lot.png"\r\nContent-Type: image/png\r\n\r\n`), png, Buffer.from(`\r\n--${boundary}--\r\n`)]);
+    const body = Buffer.concat([Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="${filename}"\r\nContent-Type: ${type}\r\n\r\n`), png, Buffer.from(`\r\n--${boundary}--\r\n`)]);
     const res = await fetch(`${this.base}/pools/${poolId}/photos`, { method: 'POST', headers: { Cookie: this.cookie, 'Content-Type': `multipart/form-data; boundary=${boundary}` }, body });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(`photo upload -> ${res.status} ${JSON.stringify(data)}`);

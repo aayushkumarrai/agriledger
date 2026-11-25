@@ -18,7 +18,7 @@ let type = 'FARMER';
 const root = document.getElementById('root');
 const card = h('section', { class: 'card auth-card' });
 root.append(h('div', { class: 'auth' },
-  h('aside', { class: 'brandpanel' }, wordmark({ inverse: true }), h('div', {}, h('h2', { class: 'brandpanel__title' }, t('login.panel_title')), h('p', { class: 'brandpanel__text' }, t('login.panel_text')))),
+  h('aside', { class: 'brandpanel' }, wordmark({ inverse: true }), h('div', { class: 'brandpanel__copy' }, h('h2', { class: 'brandpanel__title' }, t('login.panel_title')), h('p', { class: 'brandpanel__text' }, t('login.panel_text')))),
   h('main', { class: 'auth-main' }, card)));
 
 const name = field({ id: 'name', label: t('signup.name'), input: h('input', { type: 'text', autocomplete: 'name', maxlength: '100' }) });

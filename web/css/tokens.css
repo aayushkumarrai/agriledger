@@ -15,7 +15,7 @@
 
   /* type scale (spec §8.2 rule 3) */
   --fs-title: 32px;  --fs-section: 22px;  --fs-body: 15px;  --fs-small: 13px;  --fs-label: 12px;  --fs-key: 32px;
-  --fs-h3: 18px;  --fs-brand: 24px;  --fs-title-phone: 28px;   /* additions: small headings, the wordmark, the page title on a phone */
+  --fs-display: 40px;  --fs-h3: 18px;  --fs-brand: 24px;  --fs-title-phone: 28px;   /* additions: small headings, the wordmark, the page title on a phone */
 
   /* touch size (spec §8.2 rule 5) */
   --tap: 44px;

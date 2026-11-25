@@ -295,7 +295,9 @@
     "too_many": "Too many attempts. Please wait a few minutes and try again.",
     "no_signup": "There is no sign-up link. Your Pool Manager creates your account and gives you a first password.",
     "new_here": "New here?",
-    "sign_up": "Sign up"
+    "sign_up": "Sign up",
+    "panel_title": "Pooled together. Paid fairly.",
+    "panel_text": "Shared stock, proportional payouts, and every record in the open."
   },
   "password": {
     "title": "Set your own password",

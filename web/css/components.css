@@ -243,3 +243,17 @@
 /* visible to screen readers only */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .row-actions .row { justify-content: flex-end; }
+
+/* ---- the AgriLedger mark and wordmark ---- */
+.logo { width: 32px; height: 32px; flex: none; }
+.logo__bg { fill: var(--leaf); }
+.logo__line { fill: none; stroke: var(--paper); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.logo__leaf { fill: var(--paper); }
+.logo--inverse .logo__bg { fill: var(--paper); }
+.logo--inverse .logo__line { stroke: var(--leaf); }
+.logo--inverse .logo__leaf { fill: var(--leaf); }
+.wordmark { display: inline-flex; align-items: center; gap: var(--s3); font-family: var(--font-head); font-size: var(--fs-brand); line-height: 1; letter-spacing: -0.01em; color: var(--ink); }
+.wordmark__text b { font-weight: 700; }
+.wordmark__text i { font-style: normal; font-weight: 400; }
+.wordmark--inverse { color: var(--paper); }
+.brand { display: inline-flex; align-items: center; }

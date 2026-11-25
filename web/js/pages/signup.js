@@ -6,6 +6,7 @@ import { api, ApiError } from '../api.js';
 import { h, icon, clear, append } from '../dom.js';
 import { field, button, busy, isBusy } from '../components.js';
 import { HOME } from '../layout.js';
+import { wordmark } from '../logo.js';
 
 injectSprite();
 await loadMessages();
@@ -16,7 +17,9 @@ let type = 'FARMER';
 
 const root = document.getElementById('root');
 const card = h('section', { class: 'card auth-card' });
-root.append(h('div', { class: 'auth' }, h('header', { class: 'auth-brand' }, h('span', { class: 'brand' }, t('app.name'))), h('main', { class: 'auth-main' }, card)));
+root.append(h('div', { class: 'auth' },
+  h('aside', { class: 'brandpanel' }, wordmark({ inverse: true }), h('div', {}, h('h2', { class: 'brandpanel__title' }, t('login.panel_title')), h('p', { class: 'brandpanel__text' }, t('login.panel_text')))),
+  h('main', { class: 'auth-main' }, card)));
 
 const name = field({ id: 'name', label: t('signup.name'), input: h('input', { type: 'text', autocomplete: 'name', maxlength: '100' }) });
 const phone = field({ id: 'phone', label: t('signup.mobile'), input: h('input', { type: 'text', inputmode: 'numeric', autocomplete: 'tel-national', maxlength: '10', spellcheck: 'false' }) });

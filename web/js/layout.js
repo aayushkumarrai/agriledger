@@ -6,6 +6,7 @@ import { api, setSessionEndedHandler } from './api.js';
 import { h, icon, clear } from './dom.js';
 import { LiveFeed } from './live.js';
 import { onUnitChange } from './components.js';
+import { wordmark } from './logo.js';
 
 export const HOME = { buyer: '/buyer/pools.html', farmer: '/farmer/pools.html', manager: '/manager/pools.html' };
 
@@ -42,7 +43,7 @@ export async function startPage({ role, active, titleKey, onResync = async () =>
   const main = h('main', { class: 'page', id: 'main' });
   const menu = h('button', { class: 'topbar__menu', type: 'button', 'aria-expanded': 'false', 'aria-label': t('nav.menu') }, icon('menu', 'icon--lg'));
   const bar = h('header', { class: 'topbar' }, h('div', { class: 'topbar__inner' },
-    h('a', { class: 'brand', href: HOME[role] }, t('app.name')),
+    h('a', { class: 'brand', href: HOME[role] }, wordmark()),
     h('nav', { class: 'nav', 'aria-label': t('nav.main') }, NAV[role].map((n) => h('a', { href: n.href, 'aria-current': n.id === active ? 'page' : null }, t(n.key)))),
     menu,
     h('div', { class: 'topbar__user' }, h('span', {}, `${t(`role.${role}`)} · ${me.name}${role === 'manager' ? '' : ` · ${me.code}`}`),

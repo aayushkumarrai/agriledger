@@ -5,6 +5,7 @@ import { api, ApiError } from '../api.js';
 import { h, icon, clear, append } from '../dom.js';
 import { field, button, busy, isBusy } from '../components.js';
 import { HOME } from '../layout.js';
+import { wordmark } from '../logo.js';
 
 injectSprite();
 await loadMessages();
@@ -14,7 +15,9 @@ const root = document.getElementById('root');
 const params = new URLSearchParams(location.search);
 
 const card = h('section', { class: 'card auth-card' });
-root.append(h('div', { class: 'auth' }, h('header', { class: 'auth-brand' }, h('span', { class: 'brand' }, t('app.name'))), h('main', { class: 'auth-main' }, card)));
+root.append(h('div', { class: 'auth' },
+  h('aside', { class: 'brandpanel' }, wordmark({ inverse: true }), h('div', {}, h('h2', { class: 'brandpanel__title' }, t('login.panel_title')), h('p', { class: 'brandpanel__text' }, t('login.panel_text')))),
+  h('main', { class: 'auth-main' }, card)));
 
 function errorLine(id) {
   return h('p', { class: 'notice notice--bad', id, role: 'alert', hidden: true }, icon('cross'), h('span', {}));

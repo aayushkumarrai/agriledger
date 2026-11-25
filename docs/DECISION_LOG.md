@@ -130,3 +130,8 @@ See spec §6 (full table with request/response shapes).
 - Filter default options read **Status**, **Type**, **Commodity**, **Market** instead of "All statuses" and so on.
 - Market prices now also update by themselves: the server fetches when it starts and then every 6 hours (`AGRILEDGER_MARKET_AUTO_HOURS`, 0 turns it off), in addition to the button. A failure keeps the last saved prices. Reason: a Pool Manager who forgets the button would otherwise show stale prices.
 - Stage 9 (final review) waits until the user says nothing else needs changing.
+
+## S. Logo and the login and sign-up look (27 Nov, approved by the user)
+- Logo: option C, an open ledger with a sprout (green rounded square, paper-coloured drawing), with the wordmark "Agri" in bold and "Ledger" in regular weight. Used in the login and sign-up brand panel, in every top bar, and as the browser-tab icon (`web/img/logo.svg`). A designer can later refine the same idea; only that file and `web/js/logo.js` would change.
+- Login and Sign up use a split layout on wide screens: a leaf-green brand panel (logo, headline, one sentence, a faint lattice at 7%) beside the form; on phones the panel is a slim band above the form. The earlier idea of an animated record chain was tried and dropped (it did not look good). No video or photos.
+- Headline: "Pooled together. Paid fairly." (replaces "Fair prices. Open records.", which sounded like a shop). The wording can be changed in `web/i18n/en.json` (`login.panel_title`, `login.panel_text`).

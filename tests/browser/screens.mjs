@@ -94,6 +94,11 @@ async function buyer(data, vp) {
   await page.waitForURL(/\/buyer\/pools\.html/);
   await ready(page);
   await page.waitForSelector('.pool-card');
+  // navigation: tabs at the bottom on a phone, links in the top bar otherwise; a footer names the price source
+  check(await page.locator('.tabbar a').count() === 2 && await page.locator('.tabbar a[aria-current="page"]').count() === 1, 'the tab bar has the buyer\'s two pages and marks the current one');
+  check(vp.phone ? await page.locator('.tabbar').isVisible() && await page.locator('.nav').isHidden() && await page.locator('.topbar__menu').count() === 0 : await page.locator('.tabbar').isHidden() && await page.locator('.nav').isVisible(), vp.phone ? 'on a phone the pages are tabs at the bottom' : 'on a wide screen the pages are links in the top bar');
+  check(/Agmarknet via data\.gov\.in/.test(await page.textContent('.sitefoot')), 'the footer names the price source');
+  if (vp.phone) { const box = await page.locator('.tabbar a').first().boundingBox(); check(box.height >= 48, `the tabs are at least 48 px tall (${Math.round(box.height)})`); }
 
   // the list: cards with photo, price, available stock; the sold-out pool greyed with a disabled button
   tally(await review(page, stem('buyer-pools'), vp, { allowManyPrimary: true, shots: { card: '.pool-card' } }));
@@ -546,7 +551,6 @@ async function people(data, vp) {
   page.allowedStatuses = [409];
   await uiLogin(page, data.manager.username);
   await page.waitForURL(/manager\/pools\.html/); await ready(page);
-  await page.click(vp.phone ? '.topbar__menu' : 'a:has-text("People")').catch(() => {});
   await page.goto(`${base}/manager/people.html`); await ready(page); await page.waitForSelector('table, .state');
   tally(await review(page, stem('people'), vp, { allowManyPrimary: true, shots: { list: '.card--table' } }));
   const text = await page.textContent('main');

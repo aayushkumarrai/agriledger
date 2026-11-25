@@ -728,5 +728,9 @@
     "in_stock_line": "{pools} in stock",
     "grain_in": "Your grain is in {pools}",
     "open_line": "{pools} open"
+  },
+  "footer": {
+    "source": "Market prices: Agmarknet via data.gov.in",
+    "team": "AgriLedger · Team 05 mini project"
   }
 }

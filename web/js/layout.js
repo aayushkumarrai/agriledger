@@ -12,9 +12,9 @@ import { accountMenu } from './account.js';
 export const HOME = { buyer: '/buyer/pools.html', farmer: '/farmer/pools.html', manager: '/manager/pools.html' };
 
 const NAV = {
-  buyer: [{ key: 'nav.pools', href: '/buyer/pools.html', id: 'pools' }, { key: 'nav.purchases', href: '/buyer/purchases.html', id: 'purchases' }],
-  farmer: [{ key: 'nav.my_pools', href: '/farmer/pools.html', id: 'pools' }, { key: 'nav.my_statement', href: '/farmer/statement.html', id: 'statement' }],
-  manager: [{ key: 'nav.pools', href: '/manager/pools.html', id: 'pools' }, { key: 'nav.accounts', href: '/manager/accounts.html', id: 'accounts' }, { key: 'nav.people', href: '/manager/people.html', id: 'people' }],
+  buyer: [{ key: 'nav.pools', href: '/buyer/pools.html', id: 'pools', icon: 'layers' }, { key: 'nav.purchases', href: '/buyer/purchases.html', id: 'purchases', icon: 'receipt' }],
+  farmer: [{ key: 'nav.my_pools', href: '/farmer/pools.html', id: 'pools', icon: 'layers' }, { key: 'nav.my_statement', href: '/farmer/statement.html', id: 'statement', icon: 'file' }],
+  manager: [{ key: 'nav.pools', href: '/manager/pools.html', id: 'pools', icon: 'layers' }, { key: 'nav.accounts', href: '/manager/accounts.html', id: 'accounts', icon: 'pencil' }, { key: 'nav.people', href: '/manager/people.html', id: 'people', icon: 'users' }],
 };
 
 export async function fetchMe() {
@@ -42,16 +42,16 @@ export async function startPage({ role, active, titleKey, onResync = async () =>
 
   const root = document.getElementById('root');
   const main = h('main', { class: 'page', id: 'main' });
-  const menu = h('button', { class: 'topbar__menu', type: 'button', 'aria-expanded': 'false', 'aria-label': t('nav.menu') }, icon('menu', 'icon--lg'));
   const bar = h('header', { class: 'topbar' }, h('div', { class: 'topbar__inner' },
     h('a', { class: 'brand', href: HOME[role] }, wordmark()),
     h('nav', { class: 'nav', 'aria-label': t('nav.main') }, NAV[role].map((n) => h('a', { href: n.href, 'aria-current': n.id === active ? 'page' : null }, t(n.key)))),
-    menu,
     h('div', { class: 'topbar__user' }, accountMenu({ me, role, onLogout: async () => { try { await api.post('/auth/logout'); } finally { goLogin(); } } }))));
-  menu.addEventListener('click', () => { const open = bar.classList.toggle('is-open'); menu.setAttribute('aria-expanded', String(open)); });
   const pending = me.approval === 'PENDING' ? h('p', { class: 'notice notice--grey notice--bar', role: 'status' }, icon('clock'), h('span', {}, t('approval.pending'))) : null;
   if (pending) main.append(pending);
-  clear(root).append(bar, main);
+  // phones: the same pages as a bar of tabs at the bottom (thumb reach); wide screens: the links in the top bar
+  const tabbar = h('nav', { class: 'tabbar', 'aria-label': t('nav.main') }, NAV[role].map((n) => h('a', { href: n.href, 'aria-current': n.id === active ? 'page' : null }, icon(n.icon, 'icon--lg'), h('span', {}, t(n.key)))));
+  const footer = h('footer', { class: 'sitefoot' }, h('div', { class: 'sitefoot__inner' }, h('span', {}, t('footer.source')), h('span', {}, t('footer.team'))));
+  clear(root).append(bar, main, footer, tabbar);
   document.title = t(titleKey);
 
   // live feed with its small status note; on any reconnect the page re-fetches first (live.js)

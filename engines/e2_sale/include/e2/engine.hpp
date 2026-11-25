@@ -130,6 +130,15 @@ struct NewPool {
     std::optional<std::string> market;      // the APMC / market this pool belongs to
 };
 
+// One price quote from Agmarknet (via data.gov.in): one market, one variety, one market grade, one day.
+// Prices are whole rupees per quintal, stored as the same number of paise per kg.
+struct MarketPriceRow {
+    i64 commodity_id = 0;
+    std::string state, district, market, variety, market_grade;
+    std::string arrival_date;               // YYYY-MM-DD
+    i64 min_paise_per_kg = 0, max_paise_per_kg = 0, modal_paise_per_kg = 0;
+};
+
 struct ContributionResult { i64 event_id; i64 stock_after_g; i64 seller_balance_g; };
 
 struct ReconciliationStatus {
@@ -219,6 +228,11 @@ public:
     // ---- reference data ----
     nlohmann::json commodities();         // with each Range's quality limits
     nlohmann::json reference_prices();    // latest MSP and mandi modal price per commodity (paise per quintal)
+    // Stores quotes (a quote already stored for that market, variety, grade and day is updated) and adds new varieties to the
+    // drop-down list. Returns how many quotes were written. Rows that break the price rules are skipped, never stored.
+    std::size_t import_market_prices(const std::vector<MarketPriceRow>& rows);
+    // Latest market prices for one commodity (optionally one variety): summary and up to 40 quotes. Integers only.
+    nlohmann::json market_prices(i64 commodity_id, const std::optional<std::string>& variety);
 
     // ---- pools, shaped for the viewer ----
     nlohmann::json list_pools(const Viewer& viewer);

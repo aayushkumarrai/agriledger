@@ -58,6 +58,8 @@ class E4Test : public DbTest {
 protected:
     static inline std::unique_ptr<e4::Server> server;
     static inline std::string photo_dir;
+    static inline std::atomic<bool> feed_down{false};
+    static inline json feed_records = json::array();
 
     static void SetUpTestSuite() {
         if (app_conninfo().empty()) return;
@@ -75,6 +77,12 @@ protected:
         c.pwhash_memlimit = 8192;
         c.max_photo_bytes = 100 * 1024;
         c.signup_max_attempts_per_hour = 500;   // the sign-up throttle has its own test with its own server
+        c.market_min_seconds_between_updates = 0;   // the "too soon" rule has its own test with its own server
+        c.market_feed = [](const std::string&, int offset, int) -> std::string {   // a fake price file: tests never use the internet
+            if (feed_down) throw std::runtime_error("the price service is down");
+            const json records = offset == 0 ? feed_records : json::array();
+            return json{{"total", feed_records.size()}, {"count", records.size()}, {"records", records}}.dump();
+        };
         server = std::make_unique<e4::Server>(c);
         server->start();
     }
@@ -1172,4 +1180,140 @@ TEST_F(E4Test, PoolMarketIsStoredAndShown) {
     EXPECT_TRUE(mgr.get(P(make_draft_pool())).j()["market"].is_null());
     EXPECT_EQ(mgr.post("/pools", {{"commodity_id", paddy_id()}, {"variety", "X"}, {"range_no", 1}, {"storage_location", "g"}, {"market", ""},
                                   {"min_order_g", 100000}, {"price_paise_per_kg", 2500}}).status, 400);
+}
+
+// ---- market prices (decision Q, 25 Nov) ---------------------------------------------------------------------------------
+namespace {
+json quote(const std::string& district, const std::string& market, const std::string& commodity, const std::string& variety, const std::string& grade,
+           const std::string& date, const json& lo, const json& hi, const json& modal) {
+    return {{"state", "Karnataka"}, {"district", district}, {"market", market}, {"commodity", commodity}, {"variety", variety}, {"grade", grade},
+            {"arrival_date", date}, {"min_price", lo}, {"max_price", hi}, {"modal_price", modal}};
+}
+json sample_prices(int shift = 0) {   // shift moves every modal price, to test that a second update replaces the first
+    return json::array({
+        quote("Haveri", "Ranebennur APMC", "Paddy(Common)", "Paddy", "FAQ", "25/11/2026", 3700, 3800, 3750 + shift),
+        quote("Davangere", "Davangere APMC", "Paddy(Common)", "Paddy Medium", "Local", "25/11/2026", 3000, 3900, 3481 + shift),
+        quote("Vijayanagara", "H.B. Halli APMC", "Paddy(Common)", "Sona Mahsuri", "FAQ", "25/11/2026", 3800, 4000, 3900 + shift),
+        quote("Gadag", "Gadag APMC", "Maize", "Local", "FAQ", "25/11/2026", 2900, 3300, 3078 + shift),
+        quote("Haveri", "Haveri APMC", "Maize", "Local", "FAQ", "25/11/2026", 3100, 3100, 3100 + shift),
+        quote("Gadag", "Rona APMC", "Red gram/Arhar/Tur(whole)", "Arhar (Whole)", "Non-FAQ", "25/11/2026", 8800, 9400, 9150 + shift),
+        quote("Gadag", "Gadag APMC", "Red gram split/Arhar dal/Tur dal", "Arhar Dal(Tur)", "Medium", "25/11/2026", 13000, 14000, 13470 + shift),
+        quote("Gadag", "Gadag APMC", "Groundnut", "Gejje", "FAQ", "25/11/2026", 6000, 8000, 7454 + shift),
+        quote("Raichur", "Raichur APMC", "Groundnut", "Shelled (Bunch)", "FAQ", "25/11/2026", 7000, 7600, 7369 + shift),   // kernels: ignored
+        quote("Dharwad", "APMC Hubballi", "Potato", "Potato", "Local", "25/11/2026", 1400, 1900, 1500),                  // not one of our crops: ignored
+        quote("Haveri", "Hanagal APMC", "Paddy(Common)", "Paddy", "FAQ", "25/11/2026", 2725.5, 3300, 2900),                // a fraction: refused
+        quote("Haveri", "Hanagal APMC", "Maize", "Local", "FAQ", "2026-11-25", 2900, 3100, 3000),                         // a date that is not day/month/year: refused
+        quote("Haveri", "Hanagal APMC", "Maize", "Hybrid", "FAQ", "25/11/2026", 3500, 3000, 3200),                        // maximum below minimum: refused
+        quote("Haveri", "Hanagal APMC", "Maize", "Brand New Variety", "FAQ", "25/11/2026", "2800", "3000", "2900"),       // digit strings are fine
+    });
+}
+}  // namespace
+
+TEST_F(E4Test, MarketPricesAreUpdatedByTheManagerOnly_AndSummarisedWithIntegers) {
+    build_world();
+    feed_down = false;
+    feed_records = sample_prices();
+    EXPECT_EQ(anon().post("/market-prices/refresh", json::object()).status, 401);
+    EXPECT_EQ(farmer_c[0].post("/market-prices/refresh", json::object()).status, 403);
+    EXPECT_EQ(buyer_c[0].post("/market-prices/refresh", json::object()).status, 403);
+    const Response ok = mgr.post("/market-prices/refresh", json::object());
+    ASSERT_EQ(ok.status, 200) << ok.body;
+    EXPECT_EQ(ok.j()["imported"], 9) << "3 paddy, 3 maize, 2 tur, 1 groundnut; the 5 refused or unrelated rows are not stored";
+
+    const i64 paddy = paddy_id();
+    EXPECT_EQ(anon().get("/market-prices?commodity_id=" + std::to_string(paddy)).status, 401);
+    EXPECT_EQ(mgr.get("/market-prices").status, 400);
+    for (Client* c : {&mgr, &farmer_c[0], &buyer_c[0]}) EXPECT_EQ(c->get("/market-prices?commodity_id=" + std::to_string(paddy)).status, 200) << "every signed-in role may read prices";
+    const json all = mgr.get("/market-prices?commodity_id=" + std::to_string(paddy)).j();
+    EXPECT_EQ(all["as_of"], "2026-11-25");
+    EXPECT_EQ(all["source"], "Agmarknet via data.gov.in");
+    EXPECT_EQ(all["commodity"]["quotes"], 3);
+    EXPECT_EQ(all["commodity"]["markets"], 3);
+    EXPECT_EQ(all["commodity"]["median_modal_paise_per_kg"], 3750);
+    EXPECT_EQ(all["commodity"]["lowest_min_paise_per_kg"], 3000);
+    EXPECT_EQ(all["commodity"]["highest_max_paise_per_kg"], 4000);
+    EXPECT_TRUE(all["variety"].is_null());
+    EXPECT_EQ(all["quotes"].size(), 3u);
+    const json mine = mgr.get("/market-prices?commodity_id=" + std::to_string(paddy) + "&variety=Sona%20Mahsuri").j();
+    EXPECT_EQ(mine["variety"]["quotes"], 1);
+    EXPECT_EQ(mine["variety"]["median_modal_paise_per_kg"], 3900);
+    EXPECT_EQ(mine["quotes"][0]["variety"], "Sona Mahsuri") << "the chosen variety is listed first";
+    EXPECT_EQ(mine["quotes"][0]["market"], "H.B. Halli APMC");
+    EXPECT_FALSE(has_key(mine, {"is_variety"}));
+    // three maize quotes: the middle one is the median
+    json maize;
+    for (const json& c : mgr.get("/reference/commodities").j()) if (c["name"] == "Maize") maize = c;
+    const json m = mgr.get("/market-prices?commodity_id=" + std::to_string(maize["commodity_id"].get<i64>())).j();
+    EXPECT_EQ(m["commodity"]["quotes"], 3);
+    EXPECT_EQ(m["commodity"]["median_modal_paise_per_kg"], 3078 + 0) << "modal prices 2900, 3078, 3100: the middle one";
+    // the Tur commodity holds both whole and split tur; kernels of groundnut are left out
+    json tur, nut;
+    for (const json& c : mgr.get("/reference/commodities").j()) { if (c["name"] == "Tur (Arhar)") tur = c; if (c["name"] == "Groundnut with pods") nut = c; }
+    EXPECT_EQ(mgr.get("/market-prices?commodity_id=" + std::to_string(tur["commodity_id"].get<i64>())).j()["commodity"]["quotes"], 2);
+    EXPECT_EQ(mgr.get("/market-prices?commodity_id=" + std::to_string(nut["commodity_id"].get<i64>())).j()["commodity"]["quotes"], 1);
+    // new varieties reach the Create pool drop-down
+    const auto& varieties = maize["varieties"];
+    EXPECT_NE(std::find(varieties.begin(), varieties.end(), "Brand New Variety"), varieties.end());
+    EXPECT_NE(std::find(varieties.begin(), varieties.end(), "Local"), varieties.end());
+}
+
+TEST_F(E4Test, ASecondUpdateReplacesTheDaysQuotes_AFailedUpdateKeepsTheLastOnes) {
+    build_world();
+    feed_down = false;
+    feed_records = sample_prices();
+    ASSERT_EQ(mgr.post("/market-prices/refresh", json::object()).status, 200);
+    const std::string path = "/market-prices?commodity_id=" + std::to_string(paddy_id());
+    EXPECT_EQ(mgr.get(path).j()["commodity"]["median_modal_paise_per_kg"], 3750);
+    feed_records = sample_prices(100);   // prices moved later the same day
+    ASSERT_EQ(mgr.post("/market-prices/refresh", json::object()).status, 200);
+    const json after = mgr.get(path).j();
+    EXPECT_EQ(after["commodity"]["quotes"], 3) << "the same quotes were updated, not added again";
+    EXPECT_EQ(after["commodity"]["median_modal_paise_per_kg"], 3850);
+
+    feed_down = true;
+    const Response failed = mgr.post("/market-prices/refresh", json::object());
+    EXPECT_EQ(failed.status, 502);
+    EXPECT_EQ(failed.j()["error"], "PRICE_FEED_UNAVAILABLE");
+    EXPECT_EQ(failed.body.find("down"), std::string::npos) << "the browser gets a code, never the reason text";
+    EXPECT_EQ(mgr.get(path).j()["commodity"]["median_modal_paise_per_kg"], 3850) << "the last saved prices stay";
+    feed_down = false;
+    feed_records = json::array({"not an object", json::object()});   // a file nobody can use is not stored and changes nothing
+    EXPECT_EQ(mgr.post("/market-prices/refresh", json::object()).j()["imported"], 0);
+    EXPECT_EQ(mgr.get(path).j()["commodity"]["median_modal_paise_per_kg"], 3850);
+}
+
+TEST_F(E4Test, MarketPriceUpdatesAreNotSetUpWithoutAKey_AndAreRateLimited) {
+    e4::Config c;
+    c.db_conninfo = app_conninfo();
+    c.port = 0;
+    c.photo_dir = photo_dir;
+    c.web_dir = AGRI_WEB_DIR;
+    c.pwhash_opslimit = 1; c.pwhash_memlimit = 8192;
+    {   // no key and no fake feed: the button says it is not set up, and nothing is run
+        e4::Server bare(c);
+        bare.start();
+        const std::string user = unique_name("mgr");
+        bare.create_account("Manager", user, "MANAGER", kTemp);
+        Client m(bare.port());
+        ASSERT_EQ(m.login(user, kTemp).status, 200);
+        ASSERT_EQ(m.post("/auth/change-password", {{"current_password", kTemp}, {"new_password", kPass}}).status, 200);
+        const Response r = m.post("/market-prices/refresh", json::object());
+        EXPECT_EQ(r.status, 503);
+        EXPECT_EQ(r.j()["error"], "PRICE_FEED_NOT_SET_UP");
+        bare.stop();
+    }
+    c.market_feed = [](const std::string&, int, int) { return json{{"total", 0}, {"count", 0}, {"records", json::array()}}.dump(); };
+    c.market_min_seconds_between_updates = 3600;
+    e4::Server slow(c);
+    slow.start();
+    const std::string user = unique_name("mgr");
+    slow.create_account("Manager", user, "MANAGER", kTemp);
+    Client m(slow.port());
+    ASSERT_EQ(m.login(user, kTemp).status, 200);
+    ASSERT_EQ(m.post("/auth/change-password", {{"current_password", kTemp}, {"new_password", kPass}}).status, 200);
+    EXPECT_EQ(m.post("/market-prices/refresh", json::object()).status, 200);
+    const Response again = m.post("/market-prices/refresh", json::object());
+    EXPECT_EQ(again.status, 429) << "pressing the button twice quickly makes one request to the shared service";
+    EXPECT_EQ(again.j()["error"], "TOO_SOON");
+    slow.stop();
 }

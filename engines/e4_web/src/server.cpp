@@ -7,10 +7,12 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <mutex>
 
 #include "e1/hashing.hpp"
 #include "e3/e2_adapter.hpp"
 #include "live.hpp"
+#include "market.hpp"
 #include "photos.hpp"
 #include "support.hpp"
 
@@ -113,6 +115,8 @@ struct Server::Impl {
     crow::SimpleApp app;
     std::future<void> running;
     bool started = false;
+    std::mutex market_mutex;                                  // one price update at a time
+    std::chrono::steady_clock::time_point last_market_update{};
 
     static e2::Config engine_config(const Config& c) {
         e2::Config e;
@@ -164,6 +168,41 @@ struct Server::Impl {
     std::string cookie_header(const std::string& token, int max_age) const {
         return std::string(kCookie) + "=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + std::to_string(max_age) +
                (cfg.cookie_secure ? "; Secure" : "");
+    }
+
+    // ---- market prices ---------------------------------------------------------------------------------------------
+
+    std::string fetch_market_page(int offset, int limit) {
+        if (cfg.market_feed) return cfg.market_feed(cfg.market_state, offset, limit);
+        for (char c : cfg.market_api_key) if (!std::isalnum(static_cast<unsigned char>(c)) && c != '-' && c != '_') throw std::runtime_error("the price service key is not valid");   // it goes into a URL
+        const std::string url = "https://api.data.gov.in/resource/" + cfg.market_resource_id + "?api-key=" + cfg.market_api_key + "&format=json&limit=" +
+                                std::to_string(limit) + "&offset=" + std::to_string(offset) + "&filters%5Bstate.keyword%5D=" + cfg.market_state;
+        return curl_get(url, 60);
+    }
+
+    crow::response refresh_market_prices() {
+        if (cfg.market_api_key.empty() && !cfg.market_feed) throw HttpError(503, "PRICE_FEED_NOT_SET_UP");
+        std::lock_guard<std::mutex> lock(market_mutex);
+        const auto now = std::chrono::steady_clock::now();
+        if (last_market_update.time_since_epoch().count() != 0 && now - last_market_update < std::chrono::seconds(cfg.market_min_seconds_between_updates))
+            throw HttpError(429, "TOO_SOON");
+        try {
+            std::map<std::string, i64> ids;
+            for (const auto& c : engine.commodities()) ids[c["name"].get<std::string>()] = c["commodity_id"].get<i64>();
+            std::size_t written = 0;
+            int offset = 0;
+            for (int page = 0; page < 5; ++page) {   // a few pages at most: Karnataka has a few hundred quotes a day
+                const ParsedFeed feed = parse_feed(fetch_market_page(offset, 1000), ids);
+                written += engine.import_market_prices(feed.rows);
+                offset += static_cast<int>(feed.received);
+                if (feed.received == 0 || offset >= feed.total) break;
+            }
+            last_market_update = now;
+            return json_response(200, {{"imported", written}});
+        } catch (const std::exception& e) {
+            std::cerr << "market prices: " << e.what() << "\n";   // the detail stays in the server log; the browser only gets a code
+            throw HttpError(502, "PRICE_FEED_UNAVAILABLE");
+        }
     }
 
     // ---- routes ----------------------------------------------------------------------------------------------------
@@ -326,6 +365,26 @@ struct Server::Impl {
                 engine.update_user(id, e);
                 return json_response(200, json::object());
             });
+        });
+
+        // Market prices (Agmarknet via data.gov.in) -----------------------------------------------------------------
+        // Anyone signed in may read the latest prices; only the Pool Manager updates them. A failed update changes nothing, so the
+        // last saved prices stay on screen.
+        CROW_ROUTE(app, "/market-prices").methods(crow::HTTPMethod::Get)([this](const crow::request& req) {
+            return guarded(req, kAny, [&](const Principal&) {
+                const auto commodity = parse_id(req.url_params.get("commodity_id"));
+                if (!commodity) throw HttpError(400, "MISSING_FIELD");
+                std::optional<std::string> variety;
+                if (const char* v = req.url_params.get("variety")) {
+                    const std::string s = v;
+                    if (s.size() > 60) throw HttpError(400, "INVALID_FIELD");
+                    if (!s.empty()) variety = s;
+                }
+                return json_response(200, engine.market_prices(*commodity, variety));
+            });
+        });
+        CROW_ROUTE(app, "/market-prices/refresh").methods(crow::HTTPMethod::Post)([this](const crow::request& req) {
+            return guarded(req, kManager, [&](const Principal&) { return refresh_market_prices(); });
         });
 
         // Reference data --------------------------------------------------------------------------------------------

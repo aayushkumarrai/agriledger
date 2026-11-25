@@ -102,6 +102,32 @@ CREATE TABLE reference_price (                          -- MSP and mandi prices:
     as_of                    DATE        NOT NULL
 );
 
+-- Daily market prices from Agmarknet (via data.gov.in), imported when the Pool Manager presses "Update market prices" (decision Q, 25 Nov).
+-- Prices are whole rupees per quintal, which is the same number as whole paise per kg: Rs 3,500 per quintal = 3,500 paise per kg.
+CREATE TABLE variety_catalog (                          -- the varieties offered in the Create pool drop-down
+    variety_id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    commodity_id  BIGINT      NOT NULL REFERENCES commodity(commodity_id),
+    variety       VARCHAR(60) NOT NULL,
+    UNIQUE (commodity_id, variety)
+);
+
+CREATE TABLE market_price (                             -- one quote: one market, one variety, one grade, one day
+    price_id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    commodity_id      BIGINT       NOT NULL REFERENCES commodity(commodity_id),
+    state             VARCHAR(60)  NOT NULL,
+    district          VARCHAR(80)  NOT NULL,
+    market            VARCHAR(100) NOT NULL,
+    variety           VARCHAR(60)  NOT NULL,
+    market_grade      VARCHAR(30)  NOT NULL,            -- the market's own label (FAQ, Local, Medium ...), not the pool's Grade 1-3
+    arrival_date      DATE         NOT NULL,
+    min_paise_per_kg  BIGINT       NOT NULL CHECK (min_paise_per_kg > 0),
+    max_paise_per_kg  BIGINT       NOT NULL CHECK (max_paise_per_kg >= min_paise_per_kg),
+    modal_paise_per_kg BIGINT      NOT NULL CHECK (modal_paise_per_kg > 0),
+    fetched_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    UNIQUE (commodity_id, state, district, market, variety, market_grade, arrival_date)
+);
+CREATE INDEX market_price_lookup ON market_price (commodity_id, arrival_date DESC);
+
 CREATE TABLE pool (
     pool_id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     commodity_id        BIGINT       NOT NULL REFERENCES commodity(commodity_id),
@@ -352,6 +378,7 @@ GRANT SELECT, INSERT, UPDATE ON pool, pool_seller_balance,
                                 app_user, pool_manager, seller, buyer
       TO agriledger_app;
 GRANT SELECT, INSERT, DELETE ON session_token, seller_phone TO agriledger_app;
-GRANT SELECT ON commodity, commodity_parameter, reference_price TO agriledger_app;   -- reference data is loaded by an admin
+GRANT SELECT ON commodity, commodity_parameter, reference_price TO agriledger_app;
+GRANT SELECT, INSERT, UPDATE ON market_price, variety_catalog TO agriledger_app;   -- prices are re-imported daily; this is not a ledger
 
 COMMIT;

@@ -3,6 +3,7 @@
 // every sale through E3 into E2.
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -31,6 +32,14 @@ struct Config {
     std::size_t max_photo_bytes = 5 * 1024 * 1024;
     unsigned long long pwhash_opslimit = 0;       // 0 = libsodium "interactive" (argon2id); tests lower it for speed
     std::size_t pwhash_memlimit = 0;              // bytes; 0 = libsodium "interactive"
+
+    // Market prices (Agmarknet via data.gov.in). The key comes from the environment (DATA_GOV_API_KEY), never from the code.
+    std::string market_api_key;
+    std::string market_resource_id = "9ef84268-d588-465a-a308-a864a43d0070";
+    std::string market_state = "Karnataka";
+    int market_min_seconds_between_updates = 60;  // the free service is shared: pressing the button twice quickly does one fetch
+    // Tests replace this; it must return the raw JSON text of one page (state, offset, limit) or throw. Default: run curl.
+    std::function<std::string(const std::string& state, int offset, int limit)> market_feed;
 };
 
 class Server {

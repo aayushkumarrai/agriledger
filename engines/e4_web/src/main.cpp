@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
     cfg.photo_dir = env("AGRILEDGER_PHOTO_DIR", "data/photos");
     cfg.web_dir = env("AGRILEDGER_WEB_DIR", "web");
     cfg.cookie_secure = env("AGRILEDGER_COOKIE_SECURE") == "1";
+    cfg.market_api_key = env("DATA_GOV_API_KEY");   // optional: without it the Update market prices button says it is not set up
 
     try {
         cfg.port = static_cast<std::uint16_t>(std::stoi(env("AGRILEDGER_PORT", "8080")));   // inside the try: a bad value is an error message, not a crash

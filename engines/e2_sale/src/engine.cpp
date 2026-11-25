@@ -137,6 +137,30 @@ i64 Engine::create_user(const NewUser& u) {
     }
 }
 
+// ---- market prices (Agmarknet via data.gov.in) -------------------------------------------------------------------------
+
+std::size_t Engine::import_market_prices(const std::vector<MarketPriceRow>& rows) {
+    return transact(*impl_, [&](pqxx::work& tx) {
+        std::size_t written = 0;
+        for (const MarketPriceRow& r : rows) {
+            const bool ok = r.commodity_id > 0 && !r.market.empty() && !r.variety.empty() && r.variety.size() <= 60 && r.market.size() <= 100 &&
+                            r.min_paise_per_kg > 0 && r.max_paise_per_kg >= r.min_paise_per_kg && r.modal_paise_per_kg > 0 &&
+                            r.arrival_date.size() == 10 && r.arrival_date[4] == '-' && r.arrival_date[7] == '-';
+            if (!ok) continue;
+            tx.exec_params0(
+                "INSERT INTO market_price(commodity_id, state, district, market, variety, market_grade, arrival_date, min_paise_per_kg, max_paise_per_kg, modal_paise_per_kg) "
+                "VALUES ($1, $2, $3, $4, $5, $6, $7::date, $8, $9, $10) "
+                "ON CONFLICT (commodity_id, state, district, market, variety, market_grade, arrival_date) DO UPDATE SET "
+                "min_paise_per_kg = EXCLUDED.min_paise_per_kg, max_paise_per_kg = EXCLUDED.max_paise_per_kg, "
+                "modal_paise_per_kg = EXCLUDED.modal_paise_per_kg, fetched_at = now()",
+                r.commodity_id, r.state, r.district, r.market, r.variety, r.market_grade, r.arrival_date, r.min_paise_per_kg, r.max_paise_per_kg, r.modal_paise_per_kg);
+            tx.exec_params0("INSERT INTO variety_catalog(commodity_id, variety) VALUES ($1, $2) ON CONFLICT DO NOTHING", r.commodity_id, r.variety);
+            ++written;
+        }
+        return written;
+    });
+}
+
 // ---- the Pool Manager's people tools ---------------------------------------------------------------------------------
 
 namespace {

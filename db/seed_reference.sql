@@ -4,7 +4,7 @@
 -- from the CURRENT official e-NAM / DMI trade-parameter document.
 \set ON_ERROR_STOP 1
 BEGIN;
-INSERT INTO commodity(name) VALUES ('Paddy'),('Maize'),('Tur dal'),('Groundnut with pods');
+INSERT INTO commodity(name) VALUES ('Paddy'),('Maize'),('Tur (Arhar)'),('Groundnut with pods');
 
 INSERT INTO commodity_parameter(commodity_id,parameter_name,range1_max,source,source_date,verified)
 SELECT commodity_id, v.p, v.r1, 'collected from web sources; check against current e-NAM/DMI document', DATE '2026-11-19', FALSE
@@ -17,11 +17,21 @@ INSERT INTO commodity_parameter(commodity_id,parameter_name)
 SELECT commodity_id, p FROM commodity, LATERAL unnest(
   CASE name
     WHEN 'Maize'               THEN ARRAY['Moisture','Foreign matter','Admixture / other edible grains']
-    WHEN 'Tur dal'             THEN ARRAY['Moisture','Foreign matter','Other edible grains','Damaged grains','Weevilled grains']
+    WHEN 'Tur (Arhar)'         THEN ARRAY['Moisture','Foreign matter','Other edible grains','Damaged grains','Weevilled grains']
     WHEN 'Groundnut with pods' THEN ARRAY['Moisture','Foreign matter','Damaged pods','Pods of other varieties']
     ELSE ARRAY[]::text[] END) AS p;
 
 -- Government support price (MSP) for common paddy, 2026-27: Rs 2,441 per quintal = 244100 paise
 INSERT INTO reference_price(commodity_id,kind,price_paise_per_quintal,label,as_of)
 SELECT commodity_id,'MSP',244100,'MSP 2026-27 (common paddy)',DATE '2026-11-19' FROM commodity WHERE name='Paddy';
+
+-- Varieties for the Create pool drop-down: names exactly as Agmarknet published them on 25 Nov 2026. Pressing "Update market prices"
+-- adds any new variety it sees. "Other" in the form still lets the Pool Manager type a name.
+INSERT INTO variety_catalog(commodity_id, variety)
+SELECT c.commodity_id, v.variety FROM commodity c JOIN (VALUES
+  ('Paddy','Paddy'),('Paddy','Paddy Medium'),('Paddy','Sona Mahsuri'),('Paddy','Sona'),('Paddy','Paddy RNR Old'),('Paddy','Paddy RNR new'),
+  ('Maize','Local'),('Maize','Hybrid/Local'),
+  ('Tur (Arhar)','Arhar (Whole)'),('Tur (Arhar)','Arhar Dal(Tur)'),
+  ('Groundnut with pods','Gejje'),('Groundnut with pods','Balli/Habbu'),('Groundnut with pods','Other')
+) AS v(commodity, variety) ON v.commodity = c.name;
 COMMIT;

@@ -1,5 +1,6 @@
 // E2 reads for E4: accounts and sessions, reference data, and role-shaped pool, ledger, farmer and buyer views.
 // All values are integers (grams, paise, permille); quality limits are decimal TEXT. All SQL uses bound parameters.
+#include <algorithm>
 #include <cstdio>
 #include <map>
 
@@ -179,8 +180,10 @@ json Engine::commodities() {
     std::map<i64, std::size_t> at;
     for (const auto& r : rt.tx.exec("SELECT commodity_id, name FROM commodity ORDER BY commodity_id")) {
         at[r[0].as<i64>()] = out.size();
-        out.push_back({{"commodity_id", r[0].as<i64>()}, {"name", r[1].as<std::string>()}, {"parameters", json::array()}});
+        out.push_back({{"commodity_id", r[0].as<i64>()}, {"name", r[1].as<std::string>()}, {"parameters", json::array()}, {"varieties", json::array()}});
     }
+    for (const auto& r : rt.tx.exec("SELECT commodity_id, variety FROM variety_catalog ORDER BY commodity_id, variety_id"))
+        out[at.at(r["commodity_id"].as<i64>())]["varieties"].push_back(r["variety"].as<std::string>());   // the Create pool drop-down
     for (const auto& r : rt.tx.exec(
              "SELECT commodity_id, parameter_name, unit, range1_max::text AS r1, range2_max::text AS r2, range3_max::text AS r3, "
              "verified, source, source_date::text AS source_date FROM commodity_parameter ORDER BY commodity_id, ctid"))   // limits in the order they were entered (Moisture first), as the wireframes show them
@@ -188,6 +191,52 @@ json Engine::commodities() {
             {{"name", r["parameter_name"].as<std::string>()}, {"unit", r["unit"].as<std::string>()},
              {"range1_max", opt_str(r["r1"])}, {"range2_max", opt_str(r["r2"])}, {"range3_max", opt_str(r["r3"])},
              {"verified", r["verified"].as<bool>()}, {"source", opt_str(r["source"])}, {"source_date", opt_str(r["source_date"])}});
+    return out;
+}
+
+// The summary of a set of quotes: how many, from how many markets, and the median modal price (whole paise per kg, half-up).
+static json price_summary(const std::vector<i64>& modal, const std::vector<std::string>& markets, i64 lowest, i64 highest) {
+    if (modal.empty()) return nullptr;
+    std::vector<i64> sorted = modal;
+    std::sort(sorted.begin(), sorted.end());
+    const std::size_t n = sorted.size();
+    const i64 median = n % 2 == 1 ? sorted[n / 2] : (sorted[n / 2 - 1] + sorted[n / 2] + 1) / 2;
+    std::vector<std::string> distinct = markets;
+    std::sort(distinct.begin(), distinct.end());
+    distinct.erase(std::unique(distinct.begin(), distinct.end()), distinct.end());
+    return {{"quotes", static_cast<i64>(n)}, {"markets", static_cast<i64>(distinct.size())}, {"median_modal_paise_per_kg", median},
+            {"lowest_min_paise_per_kg", lowest}, {"highest_max_paise_per_kg", highest}};
+}
+
+json Engine::market_prices(i64 commodity_id, const std::optional<std::string>& variety) {
+    ReadTx rt(*impl_);
+    json out = {{"source", "Agmarknet via data.gov.in"}, {"as_of", nullptr}, {"fetched_at", nullptr}, {"commodity", nullptr}, {"variety", nullptr}, {"quotes", json::array()}};
+    const pqxx::result day = rt.tx.exec_params("SELECT to_char(max(arrival_date), 'YYYY-MM-DD') AS d, " + secs("max(fetched_at)") + " AS f FROM market_price WHERE commodity_id = $1", commodity_id);
+    if (day.empty() || day[0]["d"].is_null()) return out;
+    const std::string as_of = day[0]["d"].as<std::string>();
+    out["as_of"] = as_of;
+    out["fetched_at"] = day[0]["f"].as<std::string>();
+    std::vector<i64> all_modal, var_modal;
+    std::vector<std::string> all_markets, var_markets;
+    i64 all_lo = 0, all_hi = 0, var_lo = 0, var_hi = 0;
+    json quotes = json::array();
+    for (const auto& r : rt.tx.exec_params(
+             "SELECT market, district, variety, market_grade, to_char(arrival_date, 'YYYY-MM-DD') AS arrival_date, min_paise_per_kg, max_paise_per_kg, modal_paise_per_kg "
+             "FROM market_price WHERE commodity_id = $1 AND arrival_date = $2::date ORDER BY market, variety, market_grade", commodity_id, as_of)) {
+        const i64 lo = r["min_paise_per_kg"].as<i64>(), hi = r["max_paise_per_kg"].as<i64>(), mo = r["modal_paise_per_kg"].as<i64>();
+        const std::string m = r["market"].as<std::string>(), v = r["variety"].as<std::string>();
+        all_modal.push_back(mo); all_markets.push_back(m);
+        all_lo = all_modal.size() == 1 ? lo : std::min(all_lo, lo); all_hi = std::max(all_hi, hi);
+        const bool mine = variety && v == *variety;
+        if (mine) { var_modal.push_back(mo); var_markets.push_back(m); var_lo = var_modal.size() == 1 ? lo : std::min(var_lo, lo); var_hi = std::max(var_hi, hi); }
+        quotes.push_back({{"market", m}, {"district", r["district"].as<std::string>()}, {"variety", v}, {"market_grade", r["market_grade"].as<std::string>()},
+                          {"arrival_date", r["arrival_date"].as<std::string>()}, {"min_paise_per_kg", lo}, {"max_paise_per_kg", hi}, {"modal_paise_per_kg", mo}, {"is_variety", mine}});
+    }
+    out["commodity"] = price_summary(all_modal, all_markets, all_lo, all_hi);
+    out["variety"] = price_summary(var_modal, var_markets, var_lo, var_hi);
+    // the chosen variety's quotes come first; the table is capped so the screen stays readable
+    std::stable_sort(quotes.begin(), quotes.end(), [](const json& a, const json& b) { return a["is_variety"].get<bool>() > b["is_variety"].get<bool>(); });
+    for (json& q : quotes) { q.erase("is_variety"); if (out["quotes"].size() < 40) out["quotes"].push_back(q); }
     return out;
 }
 

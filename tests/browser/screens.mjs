@@ -392,12 +392,36 @@ async function manager(data, vp) {
   tally(await review(page, stem('manager-live-rows'), vp, { allowManyPrimary: true, skipGrey: true, shots: { ledgers: '.ledgers' } }));
 
   // create pool, end to end
+  // market prices: nothing saved yet, then "Update market prices" reads the saved sample file (offline mode of the test server)
+  if (vp.label === '1200') {   // the sample prices are loaded once; the phone run starts with them already saved
+    await page.goto(`${base}/manager/create.html`); await ready(page); await page.waitForSelector('#market-card');
+    await page.waitForSelector('#market-card :text("No market prices saved yet")');
+    tally(await review(page, stem('manager-create-no-prices'), vp, { allowManyPrimary: true, skipGrey: true }));
+  }
+  await page.goto(`${base}/manager/pools.html`); await ready(page); await page.waitForSelector('button:has-text("Update market prices")');
+  await page.click('button:has-text("Update market prices")');
+  page.allowedStatuses = [429];   // a second press within a minute is refused on purpose (the service is shared)
+  await page.waitForSelector('.notice:has-text("updated")');
+  check(/\d+ quotes saved|a moment ago/.test(await page.textContent('main')), 'the update says how many quotes were saved, or that it just ran');
+  page.allowedStatuses = [];
   await page.goto(`${base}/manager/create.html`); await ready(page); await page.waitForSelector('#variety');
+  check((await page.locator('#variety option').allTextContents()).includes('Sona Mahsuri') && (await page.locator('#variety option').allTextContents()).includes('Other'), 'the variety is chosen from a list, with Other');
+  await page.selectOption('#variety', 'Sona Mahsuri');
+  await page.waitForSelector('#market-card table');
+  const marketText = await page.textContent('#market-card');
+  check(/₹[\d,]+ per quintal/.test(marketText) && /Sona Mahsuri/.test(marketText) && /Source: Agmarknet via data\.gov\.in/.test(marketText) && /25 Nov/.test(marketText), 'the market card shows the median price, the variety, the date and the source');
+  check(/Lowest/.test(marketText) && /Highest/.test(marketText) && /Most common/.test(marketText) && /Market grade/.test(marketText), 'the table shows lowest, highest, most common price and the market grade');
+  check(await page.inputValue('#price') === '', 'the price field stays blank: the Pool Manager decides');
+  tally(await review(page, stem('manager-create-prices'), vp, { allowManyPrimary: true, skipGrey: true, shots: { prices: '#market-card' } }));
+  await page.selectOption('#variety', '__other'); await page.waitForSelector('#variety-other');
+  await page.selectOption('#commodity', { label: 'Tur (Arhar)' });
+  check((await page.locator('#variety option').allTextContents()).includes('Arhar (Whole)'), 'changing the commodity changes the variety list');
+  await page.reload(); await ready(page); await page.waitForSelector('#variety');
   tally(await review(page, stem('manager-create'), vp, { allowManyPrimary: true, shots: { form: '.detail-grid' } }));
   check(await page.locator('button:has-text("Open for sale")').isDisabled(), 'Open for sale waits for a photo');
   await page.selectOption('#commodity', { label: 'Maize' });
-  await page.fill('#variety', `Hybrid ${vp.label} ${Date.now() % 1000}`);
-  await page.click('.toggle__opt:has-text("Grade 2")');
+  await page.selectOption('#variety', '__other'); await page.fill('#variety-other', `Hybrid ${vp.label} ${Date.now() % 1000}`);
+  await page.click('.toggle__opt:has-text("2")');
   await page.fill('#price', '2,090.50'); await page.fill('#min-order', '2'); await page.fill('#packaging', '50 kg HDPE bags'); await page.fill('#storage', 'Hubballi APMC yard');
   await page.click('button:has-text("Save as draft")');
   await page.waitForSelector('#market-error:not([hidden])');
@@ -459,6 +483,7 @@ async function manager(data, vp) {
 // ---- sign-up, pending accounts and the People page ------------------------------------------------------------------------
 async function people(data, vp) {
   const stem = (n) => `${n}-${vp.label}`;
+  try { await data.managerApi.post('/market-prices/refresh', {}); } catch { /* already updated a moment ago */ }
   const digits = (Date.now() + (vp.label === '390' ? 7 : 0)).toString().slice(-8);
   const farmerPhone = `98${digits.slice(0, 8)}`, buyerPhone = `97${digits.slice(0, 8)}`;
   // the login page offers sign-up
@@ -562,6 +587,9 @@ async function people(data, vp) {
   await ok.page.waitForURL(/buyer\/pools\.html/); await ready(ok.page);
   check(!/Waiting for the Pool Manager/.test(await ok.page.textContent('body')), 'the banner is gone after approval');
   await ok.page.goto(`${base}/buyer/pool.html?id=${data.pools.paddy}`); await ready(ok.page); await ok.page.waitForSelector('#quantity');
+  await ok.page.waitForSelector('#market-card table');
+  check(/Source: Agmarknet via data\.gov\.in/.test(await ok.page.textContent('#market-card')) && /₹[\d,]+ per quintal/.test(await ok.page.textContent('#market-card')), 'the buyer sees the day\'s market prices with their source');
+  tally(await review(ok.page, stem('buyer-pool-market'), vp, { skipGrey: true, shots: { prices: '#market-card' } }));
   await ok.page.fill('#quantity', '1'); await ok.page.click('button:has-text("Review order")'); await ok.page.waitForSelector('.modal');
   await ok.page.click('.modal button.btn--primary'); await ok.page.waitForSelector('.modal :text("Purchase complete")');
   await ok.context.close();

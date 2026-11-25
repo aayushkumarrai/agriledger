@@ -1,6 +1,8 @@
 // Pool Manager: one pool. Live stock, price and rules, records check, photos, farmers, and the three ledgers (rows appear at the
 // top by themselves; price and status changes are shown as different rows, they are not ledger rows).
+import { gradeLabel } from '../components.js';
 import { startPage } from '../layout.js';
+import { marketCard } from '../market.js';
 import { t } from '../i18n.js';
 import { api, ApiError } from '../api.js';
 import { h, icon, clear, setValue, debounce, append } from '../dom.js';
@@ -93,6 +95,8 @@ function build() {
     financial: ledgerCard('financial', 'manager.money_ledger', ['manager.col_entry', 'manager.col_amount']) };
   for (const l of Object.values(L)) l.root.querySelector('thead').replaceChildren(h('tr', {}, l.cols.map((c, i) => h('th', { class: i ? 'num' : '' }, t(c)))));
 
+  const marketBox = marketCard({ emptyKey: 'market.none_manager' });
+  marketBox.show(p.commodity_id, p.variety);
   body.replaceChildren(
     h('div', { class: 'stack' },
       breadcrumb([{ label: t('nav.pools'), href: '/manager/pools.html' }, { label: poolCode(p.pool_id) }]),
@@ -100,6 +104,7 @@ function build() {
       h('div', { class: 'row' }, tagSlot, meta)),
     h('div', { class: 'grid cols-3' }, stockCard, priceCard, recCard),
     h('div', { class: 'grid cols-2 grid--unequal' }, photosCard, farmersCard),
+    marketBox.root,
     h('div', { class: 'stack' }, h('div', { class: 'page-head page-head--tight' }, h('h2', {}, t('manager.three_ledgers'))),
       h('div', { class: 'grid cols-3 ledgers' }, L.inventory.root, L.ownership.root, L.financial.root)),
     h('div', { class: 'row row--between' }, note, h('span', {})), fileInput);
@@ -108,7 +113,7 @@ function build() {
 
 function update() {
   const p = pool; const r = refs;
-  r.title.textContent = `${p.commodity} · ${p.variety} · ${t('pool.range', { n: p.range_no })}`;
+  r.title.textContent = `${p.commodity} · ${p.variety} · ${gradeLabel(p.range_no)}`;
   clear(r.tagSlot).append(poolStatusTag(p));
   r.meta.textContent = [p.storage_location ? t('pool.stored_at', { place: p.storage_location }) : '', p.packaging].filter(Boolean).join(' · ');
   setValue(r.stock, formatQuantity(p.stock_g, getUnit()));

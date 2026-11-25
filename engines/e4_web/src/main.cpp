@@ -8,8 +8,10 @@
 #include <atomic>
 #include <chrono>
 #include <csignal>
+#include <fstream>
 #include <cstdlib>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <thread>
 
@@ -36,6 +38,15 @@ int main(int argc, char** argv) {
     cfg.photo_dir = env("AGRILEDGER_PHOTO_DIR", "data/photos");
     cfg.web_dir = env("AGRILEDGER_WEB_DIR", "web");
     cfg.cookie_secure = env("AGRILEDGER_COOKIE_SECURE") == "1";
+    // Offline mode: AGRILEDGER_MARKET_FEED_FILE names a saved price file (the same JSON the service sends). The Update market prices
+    // button then reads that file instead of calling the internet. Used by the browser tests and for demos without a connection.
+    if (const std::string file = env("AGRILEDGER_MARKET_FEED_FILE"); !file.empty())
+        cfg.market_feed = [file](const std::string&, int offset, int) -> std::string {
+            if (offset > 0) return R"({"total":0,"count":0,"records":[]})";
+            std::ifstream in(file);
+            if (!in) throw std::runtime_error("the saved price file could not be read");
+            return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+        };
     cfg.market_api_key = env("DATA_GOV_API_KEY");   // optional: without it the Update market prices button says it is not set up
 
     try {

@@ -24,7 +24,7 @@ export function startServer(dbConninfo) {
     if (!existsSync(SERVER_BIN)) return reject(new Error('build the server first: cmake --build build --target agriledger_server'));
     const db = dbConninfo || process.env.AGRILEDGER_DB || 'host=127.0.0.1 port=1 dbname=none user=none connect_timeout=1';
     const photoDir = join(OUT, 'photos-' + process.pid);
-    const env = { ...process.env, AGRILEDGER_DB: db, AGRILEDGER_PORT: '0', AGRILEDGER_WEB_DIR: join(ROOT, 'web'), AGRILEDGER_PHOTO_DIR: photoDir };
+    const env = { ...process.env, AGRILEDGER_DB: db, AGRILEDGER_PORT: '0', AGRILEDGER_WEB_DIR: join(ROOT, 'web'), AGRILEDGER_PHOTO_DIR: photoDir, AGRILEDGER_MARKET_FEED_FILE: join(ROOT, 'tests', 'fixtures', 'market_sample.json') };
     const child = spawn(SERVER_BIN, [], { env, stdio: ['ignore', 'pipe', 'ignore'] });
     let buffer = '';
     child.stdout.on('data', (d) => {

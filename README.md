@@ -66,8 +66,18 @@ New people sign up themselves on the login page (**New here? Sign up**), choosin
 pending until the Pool Manager approves it on the **People** page. There is no Pool Manager sign-up: that account is created on the server with
 `create-manager`.
 
-Pools: P-12 paddy, Sona Masuri, Range 1, ₹2,500 per quintal, 600 + 800 + 600 kg, open; P-13 groundnut, open; P-14 maize, sold out.
+Pools: P-12 paddy (Sona Mahsuri, Grade 1, 600 + 800 + 600 kg, open), P-13 groundnut (Gejje, open), P-14 maize (sold out). Each pool's price starts from the market's median price for its variety on the day the demo data is loaded.
 Evaluators: follow `DEMO_SCRIPT.md`. On an Android phone on the same Wi-Fi, start the server with `AGRILEDGER_BIND=0.0.0.0` and open `http://<your PC's address>:8080`.
+
+## Market prices (Agmarknet via data.gov.in)
+The Pool Manager's **Pools** page has an **Update market prices** button. It fetches today's mandi prices for Karnataka (variety, market grade, lowest, highest and most common price,
+by market) from the free data.gov.in service, which publishes Agmarknet's daily file, and saves them. The Create pool page shows them while the Manager chooses the variety and sets a price;
+buyers and farmers see them on their pool pages. Prices are always shown with their date and the source line "Agmarknet via data.gov.in".
+1. Create a free account on data.gov.in and copy your API key (My Account).
+2. Put it in `.env` as `DATA_GOV_API_KEY=...` (this file is never committed).
+3. Restart `scripts/run_server.sh` and press **Update market prices**.
+Without a key the button says prices are not set up. For an offline demo set `AGRILEDGER_MARKET_FEED_FILE=tests/fixtures/market_sample.json` (saved real quotes from 25 Nov 2026);
+`scripts/seed_demo.sh` does this by itself when there is no key. A failed update never removes the last saved prices.
 
 ## Browser tests
 ```bash

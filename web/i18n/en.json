@@ -355,7 +355,9 @@
     "last_sale": "last sale {date}",
     "stored_at": "Stored at {place}",
     "price_history": "Price history",
-    "price_change_row": "{old} to {new} per quintal"
+    "price_change_row": "{old} to {new} per quintal",
+    "range_best": "Grade {n} (best)",
+    "range_basic": "Grade {n} (basic)"
   },
   "purchases": {
     "date": "Date",
@@ -582,7 +584,13 @@
     "market_placeholder": "For example, Hubballi APMC",
     "err_not_approved": "This person has not been verified yet.",
     "checked_at": "Checked {time}",
-    "seal": "Seal {seal}"
+    "seal": "Seal {seal}",
+    "variety_other": "Other",
+    "variety_other_label": "Variety name",
+    "variety_pick": "Choose a variety",
+    "grade_option_1": "1 (best)",
+    "grade_option_2": "2",
+    "grade_option_3": "3 (basic)"
   },
   "signup": {
     "title": "Create your account",
@@ -652,5 +660,32 @@
     "filters": "Filters",
     "col_actions": "Actions",
     "row_label": "{name}"
+  },
+  "market": {
+    "title": "Market prices",
+    "none": "No market prices saved yet.",
+    "none_manager": "No market prices saved yet. Press Update market prices on the Pools page.",
+    "median_all": "Median of the most common prices from {markets} in Karnataka",
+    "median_variety": "{variety}: median of the most common prices from {markets}",
+    "all_varieties": "All varieties together: {price} from {markets}",
+    "range": "Lowest {low} · Highest {high} per quintal",
+    "as_of": "Prices for {date}. Updated {time}.",
+    "col_market": "Market",
+    "col_variety": "Variety",
+    "col_grade": "Market grade",
+    "col_min": "Lowest",
+    "col_max": "Highest",
+    "col_modal": "Most common",
+    "show_all": "Show all {n} quotes",
+    "show_fewer": "Show fewer",
+    "source": "Source: Agmarknet via data.gov.in",
+    "error": "The market prices could not be loaded.",
+    "update": "Update market prices",
+    "updated": "Market prices updated. {n} quotes saved.",
+    "not_set_up": "Market prices are not set up on this server yet.",
+    "unavailable": "The market prices could not be updated right now. The last saved prices are still shown.",
+    "too_soon": "Prices were updated a moment ago. Please wait a minute and try again.",
+    "markets_one": "{n} market",
+    "markets_many": "{n} markets"
   }
 }

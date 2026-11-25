@@ -36,7 +36,18 @@ for (const [username, name, type, phone] of people) {
   ids[username] = r.data.user_id;
   await activate(username);
 }
+// market prices first: the real ones when the server has a data.gov.in key, otherwise the saved sample file (see seed_demo.sh)
+let priced = false;
+try { await m.post('/market-prices/refresh', {}); priced = true; } catch (e) { console.log('Market prices could not be loaded; the demo pools use fixed prices:', String(e.message).slice(0, 80)); }
 const commodities = (await m.get('/reference/commodities')).data;
+// a pool's price starts from the market's median modal price for its variety (or the commodity); whole rupees per quintal
+async function marketPrice(commodityName, variety, fallback) {
+  if (!priced) return fallback;
+  const id = commodities.find((c) => c.name === commodityName).commodity_id;
+  const data = (await m.get(`/market-prices?commodity_id=${id}&variety=${encodeURIComponent(variety)}`)).data;
+  const summary = data.variety || data.commodity;
+  return summary ? summary.median_modal_paise_per_kg : fallback;
+}
 const commodity = (name) => commodities.find((c) => c.name === name).commodity_id;
 const make = async (spec, colours, deposits) => {
   const r = await m.post('/pools', { commodity_id: commodity(spec.commodity), variety: spec.variety, range_no: spec.range, packaging: spec.packaging, storage_location: spec.storage, market: spec.market, min_order_g: spec.min, price_paise_per_kg: spec.price });
@@ -46,13 +57,14 @@ const make = async (spec, colours, deposits) => {
   await m.patch(`/pools/${id}`, { status: 'open' });
   return id;
 };
-// the main demo pool: paddy, Sona Masuri, Range 1, Rs 2,500 per quintal, 600 + 800 + 600 kg
-const main = await make({ commodity: 'Paddy', variety: 'Sona Masuri', range: 1, packaging: '50 kg jute bags', storage: 'Navalgund godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: 2500 }, [[196, 160, 78], [176, 142, 70]], [['farmer.a', 600000], ['farmer.b', 800000], ['farmer.c', 600000]]);
-const second = await make({ commodity: 'Groundnut with pods', variety: 'JL-24', range: 2, packaging: '40 kg gunny bags', storage: 'Annigeri godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: 6783 }, [[184, 132, 84]], [['farmer.a', 1125500], ['farmer.b', 1462000]]);
-const sold = await make({ commodity: 'Maize', variety: 'Pioneer 30V92', range: 1, packaging: '50 kg HDPE bags', storage: 'Hubballi APMC yard', market: 'Hubballi APMC', min: 200000, price: 2090 }, [[214, 178, 80]], [['farmer.b', 520500]]);
+// the main demo pool: paddy, Sona Masuri, Grade 1, 600 + 800 + 600 kg, priced from today's market
+const main = await make({ commodity: 'Paddy', variety: 'Sona Mahsuri', range: 1, packaging: '50 kg jute bags', storage: 'Navalgund godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: await marketPrice('Paddy', 'Sona Mahsuri', 2500) }, [[196, 160, 78], [176, 142, 70]], [['farmer.a', 600000], ['farmer.b', 800000], ['farmer.c', 600000]]);
+const second = await make({ commodity: 'Groundnut with pods', variety: 'Gejje', range: 2, packaging: '40 kg gunny bags', storage: 'Annigeri godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: await marketPrice('Groundnut with pods', 'Gejje', 6783) }, [[184, 132, 84]], [['farmer.a', 1125500], ['farmer.b', 1462000]]);
+const maizePrice = await marketPrice('Maize', 'Local', 2090);
+const sold = await make({ commodity: 'Maize', variety: 'Local', range: 1, packaging: '50 kg HDPE bags', storage: 'Hubballi APMC yard', market: 'Hubballi APMC', min: 200000, price: maizePrice }, [[214, 178, 80]], [['farmer.b', 520500]]);
 const b = new Api(base);
 await b.login('buyer.1', DEMO_PASSWORD);
-await b.post(`/pools/${sold}/sales`, { request_id: randomUUID(), quantity_g: 520500, confirmed_price_paise_per_kg: 2090 });   // sells out
+await b.post(`/pools/${sold}/sales`, { request_id: randomUUID(), quantity_g: 520500, confirmed_price_paise_per_kg: maizePrice });   // sells out
 // one real sign-up waiting for the Manager's approval (shows the People page and the pending state)
 await new Api(base).post('/auth/signup', { type: 'FARMER', name: 'Shivappa Naik', phone: '9845000006', id_doc_type: 'LAND_RECORD', id_last4: '4821', password: DEMO_PASSWORD });
 console.log(`Demo data ready: P-${main} (paddy, open, 2,000 kg), P-${second} (groundnut, open), P-${sold} (maize, sold out).`);

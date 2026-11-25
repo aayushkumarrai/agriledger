@@ -9,7 +9,7 @@ Read `docs/IMPLEMENTATION_SPEC.md` first. It wins over the Master Document where
 3. **Every sale is one transaction** that locks the pool row first (see spec §5.1), runs reconciliation INV-1…5 before commit, and rolls back fully on any failure. There is exactly one production sale path (E4 → E3 → E2), and Manager-placed sales use it too. The "unprotected" mode for the concurrency demo exists only inside the test harness (`tests/` and the E3 harness), on its own scratch table in a separate schema; it is never part of the E2 sale function and never compiled into the server.
 4. **Never show codes or numbers about errors.** The server sends reason codes; the browser shows plain sentences from `web/i18n/en.json`. No literal UI strings in JS or HTML.
 5. **Check roles on the server for every request.** Hiding a button is not security. Buyers never receive farmer names, shares or payouts.
-6. **Do not invent features.** Out of scope: real payments, bidding or auctions, price feeds, mobile app, negotiated prices, SMS or email. Ask instead of guessing; mark anything you assume as PROPOSED in your report.
+6. **Do not invent features.** Out of scope: real payments, bidding or auctions, mobile app, negotiated prices, SMS or email, and any live price feed that sets or changes a selling price. One exception, approved by the user on 25 Nov: the Pool Manager can press "Update market prices" to save Agmarknet's daily prices (via data.gov.in) as dated reference data, shown beside prices with the source line; they never set a pool's price. Ask instead of guessing; mark anything you assume as PROPOSED in your report.
 7. Do not change `db/schema.sql` or the wireframe-defined screens without asking.
 
 ## Decided rules (spec §4.5)

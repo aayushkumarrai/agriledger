@@ -107,7 +107,7 @@ export async function seed(base, env) {
   out.pools.paddy = await make({ commodity: 'Paddy', variety: 'Sona Masuri', range: 1, packaging: '50 kg jute bags', storage: 'Navalgund godown, Dharwad', min: 100000, price: 2500 }, [[196, 160, 78], [176, 142, 70]], [[0, 600000], [1, 800000], [0, 600000]]);
   out.pools.groundnut = await make({ commodity: 'Groundnut with pods', variety: 'JL-24', range: 2, packaging: '40 kg gunny bags', storage: 'Annigeri godown, Dharwad', min: 100000, price: 6783 }, [[184, 132, 84]], [[0, 1000000], [1, 1500000], [2, 1750000]]);
   out.pools.maize = await make({ commodity: 'Maize', variety: 'Pioneer 30V92', range: 1, packaging: '50 kg HDPE bags', storage: 'Hubballi APMC yard', min: 200000, price: 2090 }, [[214, 178, 80]], [[1, 500000]]);
-  out.pools.tur = await make({ commodity: 'Tur dal', variety: 'Gulbarga red', range: 1, packaging: '50 kg jute bags', storage: 'Gulbarga godown', min: 100000, price: 7550 }, [], [], false);
+  out.pools.tur = await make({ commodity: 'Tur (Arhar)', variety: 'Arhar (Whole)', range: 1, packaging: '50 kg jute bags', storage: 'Gulbarga godown', min: 100000, price: 7550 }, [], [], false);
 
   // a sale through the real queue and transaction, so the ledgers and statements have history
   const b1 = new Api(base); await b1.login(out.buyers[0].username, PASS);

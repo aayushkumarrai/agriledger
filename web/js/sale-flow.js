@@ -2,6 +2,7 @@
 // confirm -> accepted receipt, or one of the plain messages for a refusal (spec §6.3, wireframe BuyerFlow).
 // "Buy remaining" and "Review and confirm again" reopen the confirmation with new numbers and a NEW request id;
 // "Try again" after BUSY (or a lost connection) re-sends the SAME request id, so a purchase can never happen twice.
+import { gradeLabel } from './components.js';
 import { h, icon } from './dom.js';
 import { t } from './i18n.js';
 import { api, describeError, newRequestId } from './api.js';
@@ -20,7 +21,7 @@ export function startPurchase({ pool, grams, buyer = null, farmerNames = {}, onF
   let confirmButton = null;
   const unit = () => getUnit();
   const qty = (g) => `${formatQuantity(g, unit())} ${t(`unit.${unit()}`)}`;
-  const lot = `${poolCode(pool.pool_id)} · ${pool.commodity} · ${pool.variety} · ${t('pool.range', { n: pool.range_no })}`;
+  const lot = `${poolCode(pool.pool_id)} · ${pool.commodity} · ${pool.variety} · ${gradeLabel(pool.range_no)}`;
   const total = () => formatPaise(totalPaise(order.grams, order.paisePerKg));
 
   async function send() {

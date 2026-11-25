@@ -1,5 +1,7 @@
 // Farmer: my statement for one pool (summary tiles and a table of deposits and sales built from the ledgers).
+import { gradeLabel } from '../components.js';
 import { startPage } from '../layout.js';
+import { marketCard } from '../market.js';
 import { t } from '../i18n.js';
 import { api } from '../api.js';
 import { h, clear, debounce, append } from '../dom.js';
@@ -15,15 +17,19 @@ const page = await startPage({ role: 'farmer', active: poolId ? 'pools' : 'state
 me = page.me;
 append(page.main, [body, h('div', { class: 'row row--between' }, page.note, h('span', {}))]);
 
+const marketBox = marketCard();
+let marketShownFor = null;
+
 function paint() {
   const view = statementView(data);
+  if (marketShownFor !== data.pool_id) { marketBox.show(data.commodity_id, data.variety); marketShownFor = data.pool_id; }
   clear(body).append(
     h('div', { class: 'stack' },
       breadcrumb([{ label: t('nav.my_pools'), href: '/farmer/pools.html' }, { label: poolCode(data.pool_id) }]),
       h('div', { class: 'page-head' }, h('h1', {}, `${t('statement.title', { name: data.farmer_name })} · ${data.farmer_code}`), h('div', { class: 'row no-print' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle(), button(t('statement.print'), { onclick: () => window.print() }))),
-      h('p', { class: 'muted' }, `${poolCode(data.pool_id)} · ${data.commodity} · ${data.variety} · ${t('pool.range', { n: data.range_no })}`),
+      h('p', { class: 'muted' }, `${poolCode(data.pool_id)} · ${data.commodity} · ${data.variety} · ${gradeLabel(data.range_no)}`),
       h('div', { class: 'row' }, statementSubtitle(data))),
-    view.tiles, view.table, view.changes);
+    view.tiles, view.table, view.changes, marketBox.root);
 }
 
 async function loadStatement(quiet = false) {

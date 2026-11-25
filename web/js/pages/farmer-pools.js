@@ -1,4 +1,5 @@
 // Farmer home: one card per pool (my share, my grain left, paid to me) and the latest activity, updating by itself.
+import { gradeLabel } from '../components.js';
 import { startPage } from '../layout.js';
 import { t } from '../i18n.js';
 import { api } from '../api.js';
@@ -30,7 +31,7 @@ function card(p) {
     h('div', { class: 'pool-card__body' },
       h('div', { class: 'pool-card__content' },
         h('div', { class: 'pool-card__head' }, h('h2', { class: 'pool-card__title' }, `${p.commodity} · ${p.variety}`), poolStatusTag({ status: p.status, stock_g: p.stock_g, photos: [1] })),
-        h('p', { class: 'muted small' }, `${t('pool.pool')} ${poolCode(p.pool_id)} · ${t('pool.range', { n: p.range_no })}`),
+        h('p', { class: 'muted small' }, `${t('pool.pool')} ${poolCode(p.pool_id)} · ${gradeLabel(p.range_no)}`),
         h('div', { class: 'grid cols-3 figs' },
           fig('farmer.my_share', formatPermille(p.my_share_permille)),
           h('div', { class: 'fig' }, h('p', { class: 'label' }, t('farmer.grain_left')), h('p', {}, h('span', { class: 'fig__value' }, formatQuantity(p.my_remaining_g, getUnit())), ' ', h('span', { class: 'key-unit' }, t(`unit.${getUnit()}`)))),

@@ -1,10 +1,11 @@
 // Shared by the Pool Manager screens: pool labels, event words, and plain sentences for refusals. No codes are ever shown.
+import { gradeLabel } from './components.js';
 import { t } from './i18n.js';
 import { ApiError } from './api.js';
 import { poolCode } from './components.js';
 
 // "P-12 · Paddy · Sona Masuri · Range 1"
-export const poolLabel = (p) => `${poolCode(p.pool_id)} · ${p.commodity} · ${p.variety} · ${t('pool.range', { n: p.range_no })}`;
+export const poolLabel = (p) => `${poolCode(p.pool_id)} · ${p.commodity} · ${p.variety} · ${gradeLabel(p.range_no)}`;
 
 const EVENT_WORDS = { SALE: 'event.sale', CONTRIBUTION: 'event.deposit', PRICE_CHANGED: 'event.price_change', STATUS_CHANGED: 'event.status_change', POOL_CREATED: 'event.pool_creation' };
 export const eventWord = (type) => t(EVENT_WORDS[type] || 'event.record');

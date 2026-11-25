@@ -4,8 +4,8 @@ Setup: `scripts/seed_demo.sh`, then `scripts/run_server.sh`, then open http://lo
 (logins are in the README). Use two browser windows for steps 3 and 4.
 
 1. **Buyer view (Buyer 1, `buyer.1`).** Open "Available pools". Point out the live stock, price per quintal, Range, and that farmers appear only as a count.
-   Open P-12 (paddy): photo, quality limits with the "check against the official document" note, MSP reference price. Switch kg / quintal.
-2. **Buy.** Enter 5 quintal, Review order, Confirm. Show the receipt (total ₹12,500.00, no farmer names or payouts). Double-tap Confirm: only one purchase is made.
+   Open P-12 (paddy): photo, quality limits with the "check against the official document" note, the market prices card (today's Agmarknet prices by market) and the MSP reference price. Switch kg / quintal.
+2. **Buy.** Enter 5 quintal, Review order, Confirm. Show the receipt (the total is 5 quintal at the pool's price; no farmer names or payouts). Double-tap Confirm: only one purchase is made.
 3. **Live feed and the race (two windows).** Window A: Buyer 2 (`buyer.2`) on P-12, Window B: Pool Manager (`manager`) on the same pool.
    Buy in A and watch stock and the three ledgers change in B without a reload. Then, as the Manager, place a sale for a buyer for the last stock
    at the same moment Buyer 2 confirms: exactly one succeeds, the other gets a plain sentence ("out of stock"), and stock never goes below zero.

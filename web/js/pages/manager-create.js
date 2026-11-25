@@ -1,4 +1,5 @@
 // Pool Manager: create a pool. The draft is saved on the first photo or on "Save as draft"; "Open for sale" waits for a photo.
+import { gradeLabel } from '../components.js';
 import { startPage } from '../layout.js';
 import { t } from '../i18n.js';
 import { api } from '../api.js';
@@ -6,6 +7,7 @@ import { h, icon, clear, append } from '../dom.js';
 import { field, button, busy, isBusy, breadcrumb, skeleton, errorState } from '../components.js';
 import { formatPricePerKg, formatPaise, parsePricePerQuintal, parseQuantity } from '../format.js';
 import { managerError, photoProblem } from '../manager.js';
+import { marketCard } from '../market.js';
 
 let commodities = [];
 let poolId = null;       // set once the draft exists
@@ -19,15 +21,21 @@ body.append(skeleton());
 function build() {
   const commodity = h('select', {}, commodities.map((c) => h('option', { value: c.commodity_id }, c.name)));
   const cField = field({ id: 'commodity', label: t('manager.commodity'), input: commodity });
-  const variety = field({ id: 'variety', label: t('manager.variety'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '60' }) });
+  // the variety is chosen from the names the markets use; "Other" lets the Pool Manager type one that is not on the list
+  const OTHER = '__other';
+  const variety = field({ id: 'variety', label: t('manager.variety'), input: h('select', {}) });
+  const varietyOther = field({ id: 'variety-other', label: t('manager.variety_other_label'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '60' }) });
+  varietyOther.root.hidden = true;
+  const varietyValue = () => (variety.input.value === OTHER ? varietyOther.input.value.trim() : variety.input.value);
+  const marketBox = marketCard({ emptyKey: 'market.none_manager' });
   const price = field({ id: 'price', label: t('manager.price_field'), input: h('input', { type: 'text', inputmode: 'numeric', autocomplete: 'off' }), hint: t('manager.price_hint') });
   const minOrder = field({ id: 'min-order', label: t('manager.min_field'), input: h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', value: '1' }), hint: t('manager.min_hint') });
   const packaging = field({ id: 'packaging', label: t('manager.packaging'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '60' }) });
   const market = field({ id: 'market', label: t('manager.market'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '80', placeholder: t('manager.market_placeholder') }) });
   const storage = field({ id: 'storage', label: t('manager.stored_at'), input: h('input', { type: 'text', autocomplete: 'off', maxlength: '120' }) });
-  const rangeBtns = [1, 2, 3].map((n) => h('button', { class: 'toggle__opt', type: 'button', 'aria-pressed': String(n === range), onclick: () => { range = n; for (const [i, b] of rangeBtns.entries()) b.setAttribute('aria-pressed', String(i + 1 === n)); paintLimits(); } }, t('pool.range', { n })));
+  const rangeBtns = [1, 2, 3].map((n) => h('button', { class: 'toggle__opt', type: 'button', 'aria-pressed': String(n === range), onclick: () => { range = n; for (const [i, b] of rangeBtns.entries()) b.setAttribute('aria-pressed', String(i + 1 === n)); paintLimits(); } }, t(`manager.grade_option_${n}`)));
   const rangeBox = h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('manager.range_label')), h('div', { class: 'row' }, h('div', { class: 'toggle', role: 'group', 'aria-label': t('manager.range_label') }, rangeBtns)));
-  const fields = [commodity, variety.input, price.input, minOrder.input, packaging.input, market.input, storage.input];
+  const fields = [commodity, variety.input, varietyOther.input, price.input, minOrder.input, packaging.input, market.input, storage.input];
 
   // photo slots
   const photoInput = h('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'visually-hidden', id: 'photo-pick', 'aria-label': t('manager.take_or_upload') });
@@ -52,15 +60,15 @@ function build() {
 
   function read() {
     let ok = true;
-    for (const f of [variety, price, minOrder, packaging, market, storage]) f.error(null);
-    if (!variety.input.value.trim()) { variety.error(t('manager.err_required')); ok = false; }
+    for (const f of [variety, varietyOther, price, minOrder, packaging, market, storage]) f.error(null);
+    if (!varietyValue()) { (variety.input.value === OTHER ? varietyOther : variety).error(t('manager.err_required')); ok = false; }
     const p = parsePricePerQuintal(price.input.value);
     if (!p.ok) { price.error(t(`input.price_${p.reason}`)); ok = false; }
     const m = parseQuantity(minOrder.input.value, 'quintal');
     if (!m.ok) { minOrder.error(t(m.reason === 'too_precise' ? 'input.quantity_too_precise_quintal' : `input.quantity_${m.reason}`)); ok = false; }
     if (!storage.input.value.trim()) { storage.error(t('manager.err_required')); ok = false; }
     if (!market.input.value.trim()) { market.error(t('manager.err_required')); ok = false; }
-    return ok ? { commodity_id: Number(commodity.value), variety: variety.input.value.trim(), range_no: range, packaging: packaging.input.value.trim() || null, storage_location: storage.input.value.trim(), market: market.input.value.trim(), min_order_g: Number(m.grams), price_paise_per_kg: Number(p.paisePerKg) } : null;
+    return ok ? { commodity_id: Number(commodity.value), variety: varietyValue(), range_no: range, packaging: packaging.input.value.trim() || null, storage_location: storage.input.value.trim(), market: market.input.value.trim(), min_order_g: Number(m.grams), price_paise_per_kg: Number(p.paisePerKg) } : null;
   }
 
   async function ensureDraft() {
@@ -123,21 +131,34 @@ function build() {
           h('tbody', {}, rows.map((p) => h('tr', {}, h('td', {}, p.name), h('td', { class: 'num' }, `${p[key].includes('.') ? p[key].replace(/0+$/, '').replace(/\.$/, '') : p[key]}${p.unit}`)))))
       : h('p', { class: 'muted' }, t('pool.limits_missing')));
   }
-  commodity.addEventListener('change', paintLimits);
+  function paintVarieties() {
+    const c = commodities.find((x) => String(x.commodity_id) === commodity.value) || commodities[0];
+    clear(variety.input).append(...(c.varieties || []).map((v) => h('option', { value: v }, v)), h('option', { value: OTHER }, t('manager.variety_other')));
+    refreshPrices();
+  }
+  function refreshPrices() {
+    const c = commodities.find((x) => String(x.commodity_id) === commodity.value) || commodities[0];
+    varietyOther.root.hidden = variety.input.value !== OTHER;
+    marketBox.show(c.commodity_id, variety.input.value === OTHER ? null : variety.input.value);
+  }
+  commodity.addEventListener('change', () => { paintLimits(); paintVarieties(); });
+  variety.input.addEventListener('change', refreshPrices);
   price.input.addEventListener('input', () => { const r = parsePricePerQuintal(price.input.value); price.hintEl.textContent = r.ok ? `${t('manager.price_hint')} = ${formatPricePerKg(r.paisePerKg)} ${t('unit.per_kg')}` : t('manager.price_hint'); });
   paintLimits();
+  paintVarieties();
 
   body.replaceChildren(
     h('div', { class: 'stack' }, breadcrumb([{ label: t('nav.pools'), href: '/manager/pools.html' }, { label: t('manager.new_pool') }]), h('h1', {}, t('manager.create_pool_title'))),
     h('div', { class: 'detail-grid detail-grid--create' },
       h('section', { class: 'card stack' },
-        h('div', { class: 'grid cols-2 grid--tight' }, cField.root, variety.root), rangeBox,
+        h('div', { class: 'grid cols-2 grid--tight' }, cField.root, variety.root), varietyOther.root, rangeBox,
         h('div', { class: 'grid cols-2 grid--tight' }, price.root, minOrder.root), h('div', { class: 'grid cols-2 grid--tight' }, packaging.root, storage.root), market.root,
         h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('manager.photos_field')), slots, slotProblem),
         draftNote, formProblem,
         h('div', { class: 'row form-actions' }, draft, open, h('span', { class: 'small muted' }, t('manager.open_needs_photo')))),
       h('div', { class: 'stack stack--loose' },
         h('section', { class: 'card stack' }, limitsTitle, limits))),
+    marketBox.root,
     photoInput);
 }
 

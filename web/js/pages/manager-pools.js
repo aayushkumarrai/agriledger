@@ -1,9 +1,10 @@
 // Pool Manager home: all pools in one table, with filters; the records badge turns red, with words, if any totals stop matching.
+import { gradeLabel } from '../components.js';
 import { startPage } from '../layout.js';
 import { t } from '../i18n.js';
 import { api } from '../api.js';
 import { h, icon, clear, debounce, append } from '../dom.js';
-import { skeleton, errorState, emptyState, unitToggle, onUnitChange, poolStatusTag, recordsTag, poolCode } from '../components.js';
+import { skeleton, errorState, emptyState, unitToggle, onUnitChange, poolStatusTag, recordsTag, poolCode, button, busy, isBusy } from '../components.js';
 import { formatQuantity, formatPricePerQuintal, padColumn, getUnit } from '../format.js';
 
 let pools = [];
@@ -21,10 +22,28 @@ const { main, note } = await startPage({
 commodityFilter = h('select', { class: 'select', 'aria-label': t('buyer.commodity') });
 statusFilter = h('select', { class: 'select', 'aria-label': t('manager.status_label') }, [['', t('manager.all_statuses')], ['draft', t('status.draft')], ['open', t('status.open')], ['out', t('status.out_of_stock')], ['closed', t('status.closed')]].map(([v, l]) => h('option', { value: v }, l)));
 const wrap = (select) => h('div', { class: 'select-wrap tool-select' }, select, icon('chevron-down'));
+// "Update market prices": the Pool Manager fetches today's Agmarknet prices. A failure changes nothing: the last saved prices stay.
+const priceNote = h('p', { class: 'notice notice--grey', role: 'status', hidden: true }, icon('check'), h('span', {}));
+const showPriceNote = (text, bad = false) => {
+  priceNote.hidden = !text; priceNote.className = `notice notice--${bad ? 'bad' : 'grey'}`;
+  priceNote.lastElementChild.textContent = text || ''; priceNote.firstElementChild.replaceWith(icon(bad ? 'cross' : 'check'));
+};
+const updatePrices = button(t('market.update'), { onclick: async () => {
+  if (isBusy(updatePrices)) return;
+  showPriceNote('');
+  try {
+    const result = await busy(updatePrices, () => api.post('/market-prices/refresh', {}));
+    showPriceNote(t('market.updated', { n: result.imported }));
+  } catch (err) {
+    showPriceNote(err.code === 'PRICE_FEED_NOT_SET_UP' ? t('market.not_set_up') : err.code === 'TOO_SOON' ? t('market.too_soon') : t('market.unavailable'), true);
+  }
+} });
+
 append(main, [
   h('div', { class: 'page-head' },
     h('div', { class: 'stack stack--tight' }, h('h1', {}, t('nav.pools'))),
-    h('a', { class: 'btn btn--primary', href: '/manager/create.html' }, icon('plus'), h('span', {}, t('manager.create_pool')))),
+    h('div', { class: 'row' }, updatePrices, h('a', { class: 'btn btn--primary', href: '/manager/create.html' }, icon('plus'), h('span', {}, t('manager.create_pool'))))),
+  priceNote,
   h('div', { class: 'page-head page-head--tools' }, h('div', { class: 'page-head__tools' }, wrap(commodityFilter), wrap(statusFilter)),
     h('div', { class: 'row' }, h('span', { class: 'muted' }, t('manager.show_stock_in')), unitToggle())),
   holder, h('p', { class: 'small muted' }, t('manager.pools_note')), h('div', { class: 'row row--between' }, note, h('span', {}))]);
@@ -49,7 +68,7 @@ function paint() {
       const go = () => location.assign(`/manager/pool.html?id=${p.pool_id}`);
       const tr = h('tr', { tabindex: '0', role: 'link', 'aria-label': `${t('pool.pool')} ${poolCode(p.pool_id)}`, onclick: go, onkeydown: (e) => { if (e.key === 'Enter') go(); } },
         h('td', { 'data-label': L.pool }, h('strong', { class: 'pool-code' }, poolCode(p.pool_id))), h('td', { 'data-label': L.what }, `${p.commodity} · ${p.variety}`),
-        h('td', { 'data-label': L.range }, t('pool.range', { n: p.range_no })), h('td', { class: 'num', 'data-label': L.price }, formatPricePerQuintal(p.price_paise_per_kg)),
+        h('td', { 'data-label': L.range }, gradeLabel(p.range_no)), h('td', { class: 'num', 'data-label': L.price }, formatPricePerQuintal(p.price_paise_per_kg)),
         h('td', { class: 'num', 'data-label': L.stock }, stocks[i]), h('td', { class: 'num', 'data-label': L.farmers }, p.farmer_count),
         h('td', { 'data-label': L.status }, poolStatusTag(p)), h('td', { 'data-label': L.records }, recordsTag(p.records)));
       return tr;

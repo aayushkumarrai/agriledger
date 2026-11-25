@@ -1,4 +1,5 @@
 // Buyer home: available pools as cards. Numbers update in place from the live feed; an out-of-stock pool stays, greyed, for a day.
+import { gradeLabel } from '../components.js';
 import { startPage } from '../layout.js';
 import { t } from '../i18n.js';
 import { api } from '../api.js';
@@ -38,7 +39,7 @@ function card(pool) {
     const out = BigInt(p.stock_g) === 0n;
     title.textContent = `${p.commodity} · ${p.variety}`;
     clear(tagSlot).append(poolStatusTag(p));
-    sub.textContent = `${t('pool.pool')} ${poolCode(p.pool_id)} · ${t('pool.range', { n: p.range_no })}`;
+    sub.textContent = `${t('pool.pool')} ${poolCode(p.pool_id)} · ${gradeLabel(p.range_no)}`;
     setValue(price, formatPricePerQuintalWhole(p.price_paise_per_kg));
     setValue(stock, formatQuantity(p.stock_g, getUnit()));
     stockUnit.textContent = t(`unit.${getUnit()}`);

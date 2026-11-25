@@ -457,7 +457,7 @@ static json price_and_status_changes(pqxx::transaction_base& tx, i64 pool_id, in
 json Engine::farmer_statement(i64 farmer_id, i64 pool_id) {
     ReadTx rt(*impl_);
     const pqxx::result p = rt.tx.exec_params(
-        "SELECT c.name AS commodity, p.variety, p.range_no, p.status, p.total_stock_g, p.price_paise_per_kg FROM pool p "
+        "SELECT c.commodity_id, c.name AS commodity, p.variety, p.range_no, p.status, p.total_stock_g, p.price_paise_per_kg FROM pool p "
         "JOIN commodity c ON c.commodity_id = p.commodity_id WHERE p.pool_id = $1", pool_id);
     if (p.empty()) throw DomainError("NOT_FOUND", "pool not found");
     const i64 stock = p[0]["total_stock_g"].as<i64>();
@@ -466,7 +466,7 @@ json Engine::farmer_statement(i64 farmer_id, i64 pool_id) {
     const i64 left = bal[0][0].as<i64>();
 
     const pqxx::row who = rt.tx.exec_params1("SELECT s.seller_name, u.public_code FROM seller s JOIN app_user u ON u.user_id = s.seller_id WHERE s.seller_id = $1", farmer_id);
-    json out = {{"farmer_name", who[0].as<std::string>()}, {"farmer_code", who[1].as<std::string>()}, {"pool_id", pool_id}, {"commodity", p[0]["commodity"].as<std::string>()}, {"variety", p[0]["variety"].as<std::string>()},
+    json out = {{"farmer_name", who[0].as<std::string>()}, {"farmer_code", who[1].as<std::string>()}, {"pool_id", pool_id}, {"commodity_id", p[0]["commodity_id"].as<i64>()}, {"commodity", p[0]["commodity"].as<std::string>()}, {"variety", p[0]["variety"].as<std::string>()},
                 {"range_no", p[0]["range_no"].as<int>()}, {"status", p[0]["status"].as<std::string>()}, {"stock_g", stock},
                 {"price_paise_per_kg", p[0]["price_paise_per_kg"].as<i64>()}};
     const i64 deposited = rt.tx.exec_params1("SELECT coalesce(sum(quantity_g),0)::bigint FROM contribution WHERE pool_id = $1 AND seller_id = $2", pool_id, farmer_id)[0].as<i64>();

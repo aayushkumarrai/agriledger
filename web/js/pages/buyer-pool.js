@@ -1,5 +1,6 @@
 // Buyer pool screen: photos, about this lot, quality limits, and the price-and-buy box (the one 2 px box). Live updates in place.
 import { startPage } from '../layout.js';
+import { marketCard } from '../market.js';
 import { t } from '../i18n.js';
 import { api, ApiError } from '../api.js';
 import { h, clear, setValue, debounce, append } from '../dom.js';
@@ -51,6 +52,8 @@ function build() {
   const gallery = h('div', { class: 'gallery' }, [0, 1, 2].map((i) => photos[i]
     ? h('div', { class: `photo${i === 0 ? ' gallery__main' : ''}` }, h('img', { src: photos[i].url, alt: t('photo.alt') }))
     : h('div', { class: `photo photo--empty${i === 0 ? ' gallery__main' : ''}` }, h('span', {}, t('photo.slot')))));
+  const marketBox = marketCard();
+  marketBox.show(p.commodity_id, p.variety);
   const history = h('section', { class: 'card stack', hidden: true }, h('p', { class: 'label' }, t('pool.price_history')), h('ul', { class: 'plain-list' }));
   const facts = h('dl', { class: 'facts' });
   const addFact = (label, value) => append(facts, [h('dt', {}, label), h('dd', {}, value)]);
@@ -104,6 +107,7 @@ function build() {
         h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('pool.about')), facts),
         h('section', { class: 'card stack' }, h('p', { class: 'label' }, t('pool.quality', { n: p.range_no })), limits), history),
       h('div', { class: 'stack stack--loose' }, buyBox)),
+    marketBox.root,
     h('div', { class: 'row row--between' }, note, h('span', {})));
   refs = { history, title, tagSlot, meta, price, priceKg, avail, availUnit, compare, input, field: f, total, review, outNote, lastSale };
 }

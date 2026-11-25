@@ -25,7 +25,7 @@ Read `docs/IMPLEMENTATION_SPEC.md` first. It wins over the Master Document where
 - Spacing from the scale 4/8/12/16/20/24/32 only. Tap targets ≥ 44 px. Visible focus ring. Tabular numerals, numbers right-aligned in tables.
 - One primary button per screen. Priority order: act first (price, stock, quantity, total, button), proof second, history last.
 - Colour never carries meaning alone (text + icon). Every screen has loading, empty, error and normal states.
-- Words: farmer, deposit, Grade 1–3 (shown as "Grade"; formerly "Range", changed 21 Nov by the user), pool. No explanatory helper text on screens: only labels, values and error or refusal messages. Never label payouts "simulated" on screen.
+- Words: farmer, deposit, Category 1–3 (shown as "Category"; formerly "Range", then "Grade"; renamed 26 Nov by the user), pool. No explanatory helper text on screens: only labels, values and error or refusal messages. Never label payouts "simulated" on screen.
 
 ## How to work
 - Work stage by stage (spec §12). Use plan mode for stages 2–7. Wait for the user's approval between stages.

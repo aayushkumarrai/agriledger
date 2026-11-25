@@ -1317,3 +1317,39 @@ TEST_F(E4Test, MarketPriceUpdatesAreNotSetUpWithoutAKey_AndAreRateLimited) {
     EXPECT_EQ(again.j()["error"], "TOO_SOON");
     slow.stop();
 }
+
+namespace {
+i64 paddy_id_of(Client& c) {
+    for (const json& x : c.get("/reference/commodities").j()) if (x["name"] == "Paddy") return x["commodity_id"].get<i64>();
+    return 0;
+}
+}  // namespace
+
+TEST_F(E4Test, MarketPricesUpdateByThemselvesWhenSwitchedOn) {
+    e4::Config c;
+    c.db_conninfo = app_conninfo();
+    c.port = 0;
+    c.photo_dir = photo_dir;
+    c.web_dir = AGRI_WEB_DIR;
+    c.pwhash_opslimit = 1; c.pwhash_memlimit = 8192;
+    c.market_auto_update_hours = 6;   // fetch at start, then every 6 hours
+    c.market_min_seconds_between_updates = 0;
+    c.market_feed = [](const std::string&, int offset, int) -> std::string {
+        const json records = offset == 0 ? sample_prices() : json::array();
+        return json{{"total", records.size() + 0}, {"count", records.size()}, {"records", records}}.dump();
+    };
+    e4::Server auto_server(c);
+    auto_server.start();
+    const std::string user = unique_name("mgr");
+    auto_server.create_account("Manager", user, "MANAGER", kTemp);
+    Client m(auto_server.port());
+    ASSERT_EQ(m.login(user, kTemp).status, 200);
+    ASSERT_EQ(m.post("/auth/change-password", {{"current_password", kTemp}, {"new_password", kPass}}).status, 200);
+    bool arrived = false;
+    for (int i = 0; i < 50 && !arrived; ++i) {   // nobody pressed the button
+        std::this_thread::sleep_for(100ms);
+        arrived = !m.get("/market-prices?commodity_id=" + std::to_string(paddy_id_of(m))).j()["as_of"].is_null();
+    }
+    EXPECT_TRUE(arrived) << "the server fetched the prices by itself at start";
+    auto_server.stop();   // must return promptly even though the next update is hours away
+}

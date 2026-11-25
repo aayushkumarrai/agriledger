@@ -37,6 +37,7 @@ struct Config {
     std::string market_api_key;
     std::string market_resource_id = "9ef84268-d588-465a-a308-a864a43d0070";
     std::string market_state = "Karnataka";
+    int market_auto_update_hours = 0;             // > 0: fetch at start and then every this many hours (main.cpp sets 6); 0 = button only
     int market_min_seconds_between_updates = 60;  // the free service is shared: pressing the button twice quickly does one fetch
     // Tests replace this; it must return the raw JSON text of one page (state, offset, limit) or throw. Default: run curl.
     std::function<std::string(const std::string& state, int offset, int limit)> market_feed;

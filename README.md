@@ -66,7 +66,7 @@ New people sign up themselves on the login page (**New here? Sign up**), choosin
 pending until the Pool Manager approves it on the **People** page. There is no Pool Manager sign-up: that account is created on the server with
 `create-manager`.
 
-Pools: P-12 paddy (Sona Mahsuri, Grade 1, 600 + 800 + 600 kg, open), P-13 groundnut (Gejje, open), P-14 maize (sold out). Each pool's price starts from the market's median price for its variety on the day the demo data is loaded.
+Pools: P-12 paddy (Sona Mahsuri, Category 1, 600 + 800 + 600 kg, open), P-13 groundnut (Gejje, open), P-14 maize (sold out). Each pool's price starts from the market's median price for its variety on the day the demo data is loaded.
 Evaluators: follow `DEMO_SCRIPT.md`. On an Android phone on the same Wi-Fi, start the server with `AGRILEDGER_BIND=0.0.0.0` and open `http://<your PC's address>:8080`.
 
 ## Market prices (Agmarknet via data.gov.in)

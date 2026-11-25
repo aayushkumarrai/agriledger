@@ -8,7 +8,7 @@ docker compose up -d --wait db >/dev/null 2>&1
 cmake --build build -j"$(nproc)" --target agriledger_server >/dev/null
 export AGRILEDGER_DB="host=127.0.0.1 port=${POSTGRES_PORT:-5432} dbname=agriledger user=$APP_DB_USER password=$APP_DB_PASSWORD"
 export AGRILEDGER_BIN="$PWD/build/engines/e4_web/agriledger_server"
-export AGRILEDGER_PORT=0 AGRILEDGER_WEB_DIR="$PWD/web"
+export AGRILEDGER_PORT=0 AGRILEDGER_WEB_DIR="$PWD/web" AGRILEDGER_MARKET_AUTO_HOURS=0   # the seed loads prices itself
 # no data.gov.in key in .env: the Update market prices button reads the saved sample file, so the demo works offline
 [ -n "${DATA_GOV_API_KEY:-}" ] || export AGRILEDGER_MARKET_FEED_FILE="$PWD/tests/fixtures/market_sample.json"
 # pool numbers start at 12 so the demo pool is P-12, as in the demo script (only when no pool exists yet)

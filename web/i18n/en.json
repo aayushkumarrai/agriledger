@@ -142,7 +142,7 @@
     },
     "type": {
       "label": "Type",
-      "pool_title": "Paddy · Sona Masuri · Grade 1",
+      "pool_title": "Paddy · Sona Masuri · Category 1",
       "body": "Noto Sans for everything you read and fill in. Source Serif 4 for headings and the AgriLedger name. A Noto Sans Kannada file can be added later without changing the design.",
       "sold": "· {quantity} sold",
       "figures": "Numbers use tabular figures, so columns line up like a ledger book."
@@ -204,7 +204,7 @@
     },
     "controls": {
       "label": "Unit toggle and checkbox",
-      "tested": "I tested this lot and it meets the Grade 1 limits for this pool."
+      "tested": "I tested this lot and it meets the Category 1 limits for this pool."
     },
     "tags": {
       "label": "Status tags"
@@ -242,7 +242,7 @@
       "label": "Pop-up",
       "title": "Confirm your purchase",
       "pool": "Pool",
-      "pool_value": "P-13 · Groundnut with pods · JL-24 · Grade 2",
+      "pool_value": "P-13 · Groundnut with pods · JL-24 · Category 2",
       "quantity": "Quantity",
       "price": "Price",
       "total": "Total"
@@ -311,7 +311,7 @@
   "buyer": {
     "pools_title": "Available pools",
     "purchases_title": "My purchases",
-    "all_commodities": "All commodities",
+    "all_commodities": "Commodity",
     "commodity": "Commodity",
     "price": "Price",
     "available": "Available",
@@ -328,7 +328,7 @@
     "quantity_label_kg": "Quantity to buy (kg)",
     "quantity_label_quintal": "Quantity to buy (quintal)",
     "out_of_stock_note": "This pool is out of stock. You can buy again after the Pool Manager records a new deposit.",
-    "all_markets": "All markets",
+    "all_markets": "Market",
     "market": "Market"
   },
   "pool": {
@@ -342,12 +342,12 @@
     "last_sale_label": "Last sale",
     "check": "Check",
     "at_most": "At most",
-    "quality": "Quality: every deposit is within these limits (Grade {n})",
-    "limits_missing": "The limits for this Grade have not been filled in yet.",
+    "quality": "Quality: every deposit is within these limits (Category {n})",
+    "limits_missing": "The limits for this category have not been filled in yet.",
     "limits_unverified": "These values must be checked against the current official document.",
-    "range": "Grade {n}",
+    "range": "Category {n}",
     "pool": "Pool",
-    "meta": "Pool {code} · Grade {range}{dates}",
+    "meta": "Pool {code} · Category {range}{dates}",
     "meta_dates": " · first deposit {first}, last deposit {last}",
     "from_farmers": "From {count} farmers",
     "from_farmer_one": "From 1 farmer",
@@ -356,8 +356,9 @@
     "stored_at": "Stored at {place}",
     "price_history": "Price history",
     "price_change_row": "{old} to {new} per quintal",
-    "range_best": "Grade {n} (best)",
-    "range_basic": "Grade {n} (basic)"
+    "range_best": "Category {n} (best)",
+    "range_basic": "Category {n} (basic)",
+    "range_standard": "Category {n} (standard)"
   },
   "purchases": {
     "date": "Date",
@@ -450,7 +451,7 @@
     "create_pool_title": "Create pool",
     "new_pool": "New pool",
     "create_error": "The form could not be loaded.",
-    "all_statuses": "All statuses",
+    "all_statuses": "Status",
     "status_label": "Status",
     "show_stock_in": "Show stock in",
     "pools_note": "Click a row to open the pool. The Records badge turns red, with words, if any totals stop matching.",
@@ -458,7 +459,7 @@
     "no_match": "No pool matches these filters.",
     "col_pool": "Pool",
     "col_commodity": "Commodity · variety",
-    "col_range": "Grade",
+    "col_range": "Category",
     "col_price": "Price per quintal",
     "col_stock_quintal": "Stock (quintal)",
     "col_stock_kg": "Stock (kg)",
@@ -518,7 +519,7 @@
     "status_changed_row": "Status changed from {old} to {new}",
     "commodity": "Commodity",
     "variety": "Variety",
-    "range_label": "Quality grade",
+    "range_label": "Quality category",
     "price_field": "Price per quintal (₹)",
     "min_field": "Minimum order (quintal)",
     "min_hint": "If less stock is left, a buyer may take the remainder.",
@@ -528,7 +529,7 @@
     "save_draft": "Save as draft",
     "open_for_sale": "Open for sale",
     "open_needs_photo": "Add at least 1 photo to open this pool.",
-    "limits_title": "Grade {n} limits for {commodity}",
+    "limits_title": "Category {n} limits for {commodity}",
     "quality_check": "Quality check",
     "allowed_at_most": "Allowed at most",
     "err_required": "This field is required.",
@@ -539,7 +540,7 @@
     "farmer": "Farmer",
     "quantity_quintal": "Quantity (quintal)",
     "quantity_kg": "Quantity (kg)",
-    "tested": "I tested this lot and it meets the Grade {n} limits for this pool.",
+    "tested": "I tested this lot and it meets the Category {n} limits for this pool.",
     "tested_required": "Tick the box to confirm the lot was tested.",
     "after_saving": "After saving",
     "pool_stock": "Pool stock",
@@ -589,7 +590,7 @@
     "variety_other_label": "Variety name",
     "variety_pick": "Choose a variety",
     "grade_option_1": "1 (best)",
-    "grade_option_2": "2",
+    "grade_option_2": "2 (standard)",
     "grade_option_3": "3 (basic)"
   },
   "signup": {
@@ -626,10 +627,10 @@
   },
   "people": {
     "title": "People",
-    "all_types": "Everyone",
+    "all_types": "Type",
     "farmers": "Farmers",
     "buyers": "Buyers",
-    "all_statuses": "All statuses",
+    "all_statuses": "Status",
     "pending_only": "Pending verification",
     "id": "ID",
     "name": "Name",

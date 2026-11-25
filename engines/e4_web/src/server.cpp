@@ -6,8 +6,10 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <condition_variable>
 #include <map>
 #include <mutex>
+#include <thread>
 
 #include "e1/hashing.hpp"
 #include "e3/e2_adapter.hpp"
@@ -115,6 +117,10 @@ struct Server::Impl {
     crow::SimpleApp app;
     std::future<void> running;
     bool started = false;
+    std::thread market_thread;                                // the automatic price update (when switched on)
+    std::mutex market_wake_mutex;
+    std::condition_variable market_wake;
+    bool market_stopping = false;
     std::mutex market_mutex;                                  // one price update at a time
     std::chrono::steady_clock::time_point last_market_update{};
 
@@ -676,11 +682,27 @@ void Server::start() {
     impl_->app.wait_for_server_start();
     impl_->hub.start();
     impl_->started = true;
+    Impl* in = impl_.get();
+    if (in->cfg.market_auto_update_hours > 0 && (!in->cfg.market_api_key.empty() || in->cfg.market_feed)) {
+        in->market_stopping = false;
+        in->market_thread = std::thread([in] {   // fetch now, then every few hours; a failure only keeps the last saved prices
+            std::unique_lock<std::mutex> lock(in->market_wake_mutex);
+            while (!in->market_stopping) {
+                lock.unlock();
+                try { in->refresh_market_prices(); } catch (...) { /* the reason is already in the server log */ }
+                lock.lock();
+                in->market_wake.wait_for(lock, std::chrono::hours(in->cfg.market_auto_update_hours), [in] { return in->market_stopping; });
+            }
+        });
+    }
 }
 
 void Server::stop() {
     if (!impl_ || !impl_->started) return;
     impl_->started = false;
+    { std::lock_guard<std::mutex> lock(impl_->market_wake_mutex); impl_->market_stopping = true; }
+    impl_->market_wake.notify_all();
+    if (impl_->market_thread.joinable()) impl_->market_thread.join();
     impl_->hub.stop();
     impl_->queue.stop();
     impl_->app.stop();

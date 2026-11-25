@@ -124,3 +124,9 @@ See spec §6 (full table with request/response shapes).
 - The Pool Manager's price field stays blank: the market prices are shown while the Manager decides. The demo pools' prices start from the market median on the day the demo data is loaded; there is no longer a worked-example pool at a fixed price in the demo.
 - Offline mode: `AGRILEDGER_MARKET_FEED_FILE` points at saved quotes (tests/fixtures/market_sample.json, real quotes from 25 Nov 2026). Tests never use the internet.
 - Schema (approved): tables `market_price` and `variety_catalog`; commodity renamed in the seed data. Existing databases need `docker compose down -v` and a re-seed.
+
+## R. Wording and automatic prices (26 Nov, the user's requests)
+- "Grade" is now **Category** everywhere: "Category 1 (best)", "Category 2 (standard)", "Category 3 (basic)" (the word in brackets says where it sits; the number decides the quality limits). The market's own label stays "Market grade" in the price table, because it is a different thing.
+- Filter default options read **Status**, **Type**, **Commodity**, **Market** instead of "All statuses" and so on.
+- Market prices now also update by themselves: the server fetches when it starts and then every 6 hours (`AGRILEDGER_MARKET_AUTO_HOURS`, 0 turns it off), in addition to the button. A failure keeps the last saved prices. Reason: a Pool Manager who forgets the button would otherwise show stale prices.
+- Stage 9 (final review) waits until the user says nothing else needs changing.

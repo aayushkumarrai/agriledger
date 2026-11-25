@@ -165,5 +165,5 @@ export function breadcrumb(parts) {
   return h('nav', { class: 'breadcrumb', 'aria-label': t('nav.breadcrumb') }, parts.map((p, i) => [i ? h('span', { 'aria-hidden': 'true' }, ' / ') : null, p.href ? h('a', { href: p.href }, p.label) : h('span', {}, p.label)]));
 }
 
-// "Grade 1 (best)", "Grade 2", "Grade 3 (basic)": the number says which quality limits apply; the word says which end it is.
-export const gradeLabel = (n) => t(n === 1 ? 'pool.range_best' : n === 3 ? 'pool.range_basic' : 'pool.range', { n });
+// "Category 1 (best)", "Category 2 (standard)", "Category 3 (basic)": the number says which quality limits apply; the word says where it sits.
+export const gradeLabel = (n) => t(n === 1 ? 'pool.range_best' : n === 3 ? 'pool.range_basic' : n === 2 ? 'pool.range_standard' : 'pool.range', { n });

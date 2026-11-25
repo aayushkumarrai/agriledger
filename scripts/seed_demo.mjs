@@ -57,7 +57,7 @@ const make = async (spec, colours, deposits) => {
   await m.patch(`/pools/${id}`, { status: 'open' });
   return id;
 };
-// the main demo pool: paddy, Sona Masuri, Grade 1, 600 + 800 + 600 kg, priced from today's market
+// the main demo pool: paddy, Sona Masuri, Category 1, 600 + 800 + 600 kg, priced from today's market
 const main = await make({ commodity: 'Paddy', variety: 'Sona Mahsuri', range: 1, packaging: '50 kg jute bags', storage: 'Navalgund godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: await marketPrice('Paddy', 'Sona Mahsuri', 2500) }, [[196, 160, 78], [176, 142, 70]], [['farmer.a', 600000], ['farmer.b', 800000], ['farmer.c', 600000]]);
 const second = await make({ commodity: 'Groundnut with pods', variety: 'Gejje', range: 2, packaging: '40 kg gunny bags', storage: 'Annigeri godown, Dharwad', market: 'Hubballi APMC', min: 100000, price: await marketPrice('Groundnut with pods', 'Gejje', 6783) }, [[184, 132, 84]], [['farmer.a', 1125500], ['farmer.b', 1462000]]);
 const maizePrice = await marketPrice('Maize', 'Local', 2090);

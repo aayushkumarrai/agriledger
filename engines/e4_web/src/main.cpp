@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
             if (!in) throw std::runtime_error("the saved price file could not be read");
             return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
         };
+    cfg.market_auto_update_hours = std::stoi(env("AGRILEDGER_MARKET_AUTO_HOURS", "6"));   // prices refresh by themselves; 0 turns that off
     cfg.market_api_key = env("DATA_GOV_API_KEY");   // optional: without it the Update market prices button says it is not set up
 
     try {

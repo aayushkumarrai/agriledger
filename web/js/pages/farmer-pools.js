@@ -6,21 +6,24 @@ import { api } from '../api.js';
 import { h, clear, setValue, debounce, append } from '../dom.js';
 import { skeleton, errorState, emptyState, unitToggle, onUnitChange, poolStatusTag, poolCode } from '../components.js';
 import { formatQuantity, formatPaise, formatPermille, formatDateTime, getUnit, toBigInt } from '../format.js';
+import { summaryStrip, poolsCount } from '../summary.js';
 
 let pools = [];
 const cards = h('div', { class: 'pool-grid pool-grid--two', id: 'cards' });
 const feed = h('section', { class: 'card card--table', id: 'activity' });
 const holder = h('div', { class: 'stack stack--loose' });
 
+const statusLine = h('p', { class: 'page-status' });
+const strip = h('div', {});
 const refresh = debounce(() => load(true), 150);
 const { main, note } = await startPage({
   role: 'farmer', active: 'pools', titleKey: 'pages.farmer_pools', onResync: () => load(true),
   liveHandlers: { stock_changed: refresh, ledger_rows: refresh, price_changed: refresh, status_changed: refresh },
 });
 append(main, [
-  h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('h1', {}, t('farmer.pools_title'))),
+  h('div', { class: 'page-head' }, h('div', { class: 'stack stack--tight' }, h('h1', {}, t('farmer.pools_title')), statusLine),
     h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle())),
-  holder, h('div', { class: 'row row--between' }, note, h('span', {}))]);
+  strip, holder, h('div', { class: 'row row--between' }, note, h('span', {}))]);
 
 const qty = (g) => `${formatQuantity(g, getUnit())} ${t(`unit.${getUnit()}`)}`;
 
@@ -52,7 +55,21 @@ function activityFeed() {
     })));
 }
 
+function paintSummary() {
+  clear(strip);
+  if (!pools.length) { statusLine.textContent = ''; return; }
+  const paid = pools.reduce((s, p) => s + toBigInt(p.paid_to_me_paise), 0n);
+  const left = pools.reduce((s, p) => s + toBigInt(p.my_remaining_g), 0n);
+  statusLine.textContent = t('summary.grain_in', { pools: poolsCount(t, pools.length) });
+  strip.append(summaryStrip([
+    { label: t('summary.paid_to_me'), value: formatPaise(paid), note: t('summary.from_all') },
+    { label: t('summary.still_unsold'), value: formatQuantity(left, getUnit()), unit: t(`unit.${getUnit()}`), note: t('summary.my_share_across') },
+    { label: t('summary.my_pools'), value: String(pools.length), note: t('summary.open_for_sale', { n: pools.filter((p) => p.status === 'open').length }) },
+  ]));
+}
+
 function paint() {
+  paintSummary();
   clear(holder);
   if (!pools.length) { holder.append(emptyState(t('farmer.empty'))); return; }
   clear(cards);

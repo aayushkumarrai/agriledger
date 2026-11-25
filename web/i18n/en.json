@@ -690,5 +690,43 @@
     "too_soon": "Prices were updated a moment ago. Please wait a minute and try again.",
     "markets_one": "{n} market",
     "markets_many": "{n} markets"
+  },
+  "account": {
+    "open": "Account menu for {name}"
+  },
+  "summary": {
+    "pools_one": "{n} pool",
+    "pools_many": "{n} pools",
+    "open_pools": "Open pools",
+    "out_of_stock": "{n} out of stock",
+    "all_in_stock": "All in stock",
+    "stock_open": "Stock in open pools",
+    "across_open": "across all open pools",
+    "waiting": "Waiting for verification",
+    "review": "Review",
+    "no_one": "No one waiting",
+    "records": "Records",
+    "records_ok": "All verified",
+    "records_bad": "{n} to check",
+    "last_sale": "Last sale {when}",
+    "no_sales": "No sales yet",
+    "pools_in_stock": "Pools in stock",
+    "of_listed": "of {n} listed",
+    "stock_available": "Stock available",
+    "across_those": "across those pools",
+    "my_purchases": "My purchases",
+    "latest": "latest {receipt}",
+    "none_yet": "none yet",
+    "last_purchase": "Last purchase",
+    "last_note": "{commodity}, {qty}",
+    "paid_to_me": "Paid to me",
+    "from_all": "from all my pools",
+    "still_unsold": "Still unsold",
+    "my_share_across": "my share across pools",
+    "my_pools": "My pools",
+    "open_for_sale": "{n} open for sale",
+    "in_stock_line": "{pools} in stock",
+    "grain_in": "Your grain is in {pools}",
+    "open_line": "{pools} open"
   }
 }

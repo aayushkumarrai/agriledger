@@ -5,13 +5,17 @@ import { t } from '../i18n.js';
 import { api } from '../api.js';
 import { h, icon, clear, setValue, debounce, append } from '../dom.js';
 import { skeleton, errorState, emptyState, unitToggle, onUnitChange, poolStatusTag, poolCode } from '../components.js';
-import { formatQuantity, formatPricePerQuintalWhole, formatDate, getUnit } from '../format.js';
+import { formatQuantity, formatPricePerQuintalWhole, formatPaise, formatDate, getUnit } from '../format.js';
+import { summaryStrip, poolsCount } from '../summary.js';
 
 const cards = new Map();   // pool_id -> { root, update(pool) }
 let pools = [];
 let commodityFilter = '';
 let grid;
 let filterSelect;
+let purchases = [];
+const statusLine = h('p', { class: 'page-status' });
+const strip = h('div', {});
 let marketSelect;
 let marketFilter = '';
 
@@ -91,9 +95,25 @@ function paint() {
   else append(grid, ordered);
 }
 
+function paintSummary() {
+  const inStock = pools.filter((p) => BigInt(p.stock_g) > 0n);
+  const stock = inStock.reduce((s, p) => s + BigInt(p.stock_g), 0n);
+  const last = purchases[0];
+  statusLine.textContent = t('summary.in_stock_line', { pools: poolsCount(t, inStock.length) });
+  clear(strip).append(summaryStrip([
+    { label: t('summary.pools_in_stock'), value: String(inStock.length), note: t('summary.of_listed', { n: pools.length }) },
+    { label: t('summary.stock_available'), value: formatQuantity(stock, getUnit()), unit: t(`unit.${getUnit()}`), note: t('summary.across_those') },
+    { label: t('summary.my_purchases'), value: String(purchases.length), note: last ? t('summary.latest', { receipt: last.receipt_no }) : t('summary.none_yet') },
+    { label: t('summary.last_purchase'), value: last ? formatPaise(last.gross_paise) : t('common.none'), note: last ? t('summary.last_note', { commodity: last.commodity, qty: `${formatQuantity(last.quantity_g, getUnit())} ${t(`unit.${getUnit()}`)}` }) : null },
+  ]));
+}
+
 async function reload(quiet = false) {
   try {
-    show(await api.get('/pools'));
+    const list = await api.get('/pools');
+    purchases = await api.get('/me/purchases').catch(() => purchases);
+    show(list);
+    paintSummary();
   } catch {
     if (!quiet) { clear(grid).append(errorState(t('buyer.pools_error'), () => reload())); }
   }
@@ -114,10 +134,10 @@ grid = h('div', { class: 'pool-grid', id: 'pool-grid' }, skeleton(), skeleton(),
 
 append(main, [
   h('div', { class: 'page-head' },
-    h('div', { class: 'stack stack--tight' }, h('h1', {}, t('buyer.pools_title'))),
+    h('div', { class: 'stack stack--tight' }, h('h1', {}, t('buyer.pools_title')), statusLine),
     h('div', { class: 'page-head__tools' }, h('div', { class: 'select-wrap tool-select' }, filterSelect, icon('chevron-down')), marketWrap, h('div', { class: 'row' }, h('span', { class: 'muted' }, t('unit.show_in')), unitToggle()))),
-  grid, h('div', { class: 'row row--between' }, note, h('span', {})),
+  strip, grid, h('div', { class: 'row row--between' }, note, h('span', {})),
 ]);
-onUnitChange(() => paint());
+onUnitChange(() => { paint(); paintSummary(); });
 await reload();
 document.documentElement.dataset.ready = 'true';

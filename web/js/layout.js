@@ -7,6 +7,7 @@ import { h, icon, clear } from './dom.js';
 import { LiveFeed } from './live.js';
 import { onUnitChange } from './components.js';
 import { wordmark } from './logo.js';
+import { accountMenu } from './account.js';
 
 export const HOME = { buyer: '/buyer/pools.html', farmer: '/farmer/pools.html', manager: '/manager/pools.html' };
 
@@ -46,8 +47,7 @@ export async function startPage({ role, active, titleKey, onResync = async () =>
     h('a', { class: 'brand', href: HOME[role] }, wordmark()),
     h('nav', { class: 'nav', 'aria-label': t('nav.main') }, NAV[role].map((n) => h('a', { href: n.href, 'aria-current': n.id === active ? 'page' : null }, t(n.key)))),
     menu,
-    h('div', { class: 'topbar__user' }, h('span', {}, `${t(`role.${role}`)} · ${me.name}${role === 'manager' ? '' : ` · ${me.code}`}`),
-      h('button', { class: 'btn btn--ghost', type: 'button', onclick: async () => { try { await api.post('/auth/logout'); } finally { goLogin(); } } }, t('common.log_out')))));
+    h('div', { class: 'topbar__user' }, accountMenu({ me, role, onLogout: async () => { try { await api.post('/auth/logout'); } finally { goLogin(); } } }))));
   menu.addEventListener('click', () => { const open = bar.classList.toggle('is-open'); menu.setAttribute('aria-expanded', String(open)); });
   const pending = me.approval === 'PENDING' ? h('p', { class: 'notice notice--grey notice--bar', role: 'status' }, icon('clock'), h('span', {}, t('approval.pending'))) : null;
   if (pending) main.append(pending);

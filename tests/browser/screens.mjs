@@ -403,6 +403,7 @@ async function manager(data, vp) {
   page.allowedStatuses = [429];   // a second press within a minute is refused on purpose (the service is shared)
   await page.waitForSelector('.notice:has-text("updated")');
   check(/\d+ quotes saved|a moment ago/.test(await page.textContent('main')), 'the update says how many quotes were saved, or that it just ran');
+  await page.waitForTimeout(500);   // the browser logs the refused request a moment after the page shows its message
   page.allowedStatuses = [];
   await page.goto(`${base}/manager/create.html`); await ready(page); await page.waitForSelector('#variety');
   check((await page.locator('#variety option').allTextContents()).includes('Sona Mahsuri') && (await page.locator('#variety option').allTextContents()).includes('Other'), 'the variety is chosen from a list, with Other');
@@ -508,7 +509,12 @@ async function people(data, vp) {
   await anon.page.click('button[type=submit]');
   await anon.page.waitForURL(/farmer\/pools\.html/, { timeout: 15000 }); await ready(anon.page);
   check(/Waiting for the Pool Manager to verify you\./.test(await anon.page.textContent('body')), 'a new farmer sees that they are waiting to be verified');
-  check(/Farmer · Shankar Gouda · F-\d{4}/.test(await anon.page.textContent('.topbar')), 'the top bar shows the generated ID');
+  check(/Shankar Gouda/.test(await anon.page.textContent('.acct__btn')) && await anon.page.locator('.acct__badge').textContent() === 'SG', 'the top bar shows the name and initials');
+  await anon.page.click('.acct__btn');
+  await anon.page.waitForSelector('.acct__menu:not([hidden])');
+  check(/Farmer · F-\d{4}/.test(await anon.page.textContent('.acct__menu')) && /Log out/.test(await anon.page.textContent('.acct__menu')), 'the account menu shows the role and generated ID, and Log out');
+  await anon.page.keyboard.press('Escape');
+  check(await anon.page.locator('.acct__menu').isHidden() && await anon.page.locator('.acct__btn').getAttribute('aria-expanded') === 'false', 'Escape closes the account menu');
   tally(await review(anon.page, stem('signup-pending-farmer'), vp, { skipGrey: true }));
   // a second sign-up with the same mobile number is refused in plain words
   const dup = await newPage(browser, base, vp); dup.page.allowedStatuses = [409];

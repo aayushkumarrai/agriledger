@@ -125,17 +125,17 @@ See spec §6 (full table with request/response shapes).
 - Offline mode: `AGRILEDGER_MARKET_FEED_FILE` points at saved quotes (tests/fixtures/market_sample.json, real quotes from 25 Nov 2026). Tests never use the internet.
 - Schema (approved): tables `market_price` and `variety_catalog`; commodity renamed in the seed data. Existing databases need `docker compose down -v` and a re-seed.
 
-## R. Wording and automatic prices (26 Nov, the user's requests)
+## R. Wording and automatic prices (25 Nov, the user's requests)
 - "Grade" is now **Category** everywhere: "Category 1 (best)", "Category 2 (standard)", "Category 3 (basic)" (the word in brackets says where it sits; the number decides the quality limits). The market's own label stays "Market grade" in the price table, because it is a different thing.
 - Filter default options read **Status**, **Type**, **Commodity**, **Market** instead of "All statuses" and so on.
 - Market prices now also update by themselves: the server fetches when it starts and then every 6 hours (`AGRILEDGER_MARKET_AUTO_HOURS`, 0 turns it off), in addition to the button. A failure keeps the last saved prices. Reason: a Pool Manager who forgets the button would otherwise show stale prices.
 - Stage 9 (final review) waits until the user says nothing else needs changing.
 
-## S. Logo and the login and sign-up look (27 Nov, approved by the user)
+## S. Logo and the login and sign-up look (25 Nov, approved by the user)
 - Logo: option C, an open ledger with a sprout (green rounded square, paper-coloured drawing), with the wordmark "Agri" in bold and "Ledger" in regular weight. Used in the login and sign-up brand panel, in every top bar, and as the browser-tab icon (`web/img/logo.svg`). A designer can later refine the same idea; only that file and `web/js/logo.js` would change.
 - Login and Sign up use a split layout on wide screens: a leaf-green brand panel (logo, headline, one sentence, a faint lattice at 7%) beside the form; on phones the panel is a slim band above the form. The earlier idea of an animated record chain was tried and dropped (it did not look good). No video or photos.
 - Headline: "Every kilo counted. Every share paid." (chosen by the user; replaces "Fair prices. Open records.", which sounded like a shop). It sits in the middle of the panel in a large size (`--fs-display` 40 px, added to the type scale) so it is easy to read. The wording can be changed in `web/i18n/en.json` (`login.panel_title`, `login.panel_text`).
 
-## T. Phone tab bar and footer (27 Nov, approved by the user)
+## T. Phone tab bar and footer (25 Nov, approved by the user)
 - On phones (up to 719 px) the pages are a bar of tabs fixed at the bottom (icon and label, at least 56 px tall, the current page marked with a green top line); the hamburger menu is gone from the app pages. On wider screens the links stay in the top bar. Buyer: Pools, My purchases. Farmer: My pools, My statement. Pool Manager: Pools, Deposits and sales, People.
 - Every app page ends with a quiet footer: "Market prices: Agmarknet via data.gov.in" and "AgriLedger · Team 05 mini project". Both are hidden when printing. Not built: a faint logo above empty-state messages (low value).
